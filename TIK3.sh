@@ -623,7 +623,6 @@ else
 fi
 img_size=`echo $img_size0 | sed 's/\..*//g'`
 size=`echo "$img_size0 / $BLOCKSIZE" |bc`
-
 if [[ "$auto_fsconfig" == "1" ]] ;then
 python3 $binner/fspatch.py $in_files $fs_config
 fi
