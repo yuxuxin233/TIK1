@@ -11,7 +11,8 @@
 4.  已支持目前安卓13新机型，包括但不限于Xiaomi OPPO Pixel等
 
 5.  迁移至Magisk Boot Kitchen分解合成[boot|exaid|recovery/etc].img
-
+    *由于未知原因导致的Bug，暂时迁移回AndroidImagineKitchen*
+    
 6.  支持分解全版本super.img(V-AB)支持各种类型打包（半自动识别，高效稳定）
 
 
@@ -33,12 +34,12 @@
 
 3. 虚拟机或实体机 Ubuntu 20.04及以上版本 x86_64[x64] 
 
-Note: WSL 可能存在权限出错的问题 请自行判断测试
+Note: WSL 可能存在权限出错的问题 请自行判断测试！
 
 
 ####  **安装教程** 
 
-    git clone https://www.github.com/NightstarSakura/TIK3
+    git clone https://gitee.com/yeliqin666/TIK
     cd TIK3 && bash TIK3.sh
 	
 ####  **【手机端--需配置proot环境】** 
@@ -47,9 +48,9 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试
 
         termux-setup-storage
 
-<!-- 2----手机一键配置proot并下载工具
+2----手机一键配置proot并下载工具
 
-	bash <(curl -s https://gitee.com/xiaobai2333/proot-ubuntu/raw/master/onekey_install.sh) -->
+        bash <(curl -s https://gitee.com/yeliqin666/proot-ubuntu/raw/master/onekey_install.sh)
 
 
 ####  **使用说明** 
@@ -59,9 +60,9 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试
 2.   **关于手机解压zip** 
     - 请将zip文件放置在【 **内置存储 /sdcard/TIK3** 】，工具会自动查找（设置中可以修改)
 
-3.  手机端termux proot ubuntu下工具目录： 【**/data/data/com.termux/files/home/ubuntu/root/TIK3** 】
+3.  手机端termux proot ubuntu下工具目录： 【**/data/data/com.termux/files/home/ubuntu/root/TIK** 】
 
-4.  **请勿删除【工程目录/TI_config文件夹】，打包时所需的文件信息都在此处，默认工具会自动帮您修改大小，适配动态分区！！！
+4.  **请勿删除【工程目录/TI_config文件夹】，打包时所需的文件信息都在此处，默认工具会自动帮您修改大小，适配动态分区！（可自行调整）
 
 5.  由于手机性能、proot效率、工作模式( **如打包img前自动比对fs_config，不会立刻打包** )等原因，保持耐心，等待片刻即可；
 
@@ -73,7 +74,7 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试
 
 10.  手机上使用工具时如果使用 **系统ROOT** 对工程目录下进行了操作(比如： **添加文件，修改文件**等。。。 )，请记得给操作过的文件或文件夹  **777**  满权！！！
 
-####  **参与贡献** 
+####  **参与贡献(部分)** 
 
 Credit:
 1.  mke2fs & e2fsdroid [aarch64 from @小新大大](https://github.com/xiaoxindada/SGSI-build-tool)

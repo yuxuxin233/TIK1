@@ -619,7 +619,7 @@ if [[ "$diysize" == "1" ]] && [ "$img_size0" -lt "$img_size1" ] ;then
 elif [[ "$diysize" == "1" ]] ;then
 	img_size0=$img_size0
 else
-	img_size0=`echo "$img_size1 * 1.06" |bc`  
+	img_size0=`echo "$img_size1 + 104857600" |bc` 
 fi
 img_size=`echo $img_size0 | sed 's/\..*//g'`
 size=`echo "$img_size0 / $BLOCKSIZE" |bc`
@@ -638,7 +638,7 @@ else
 		sed -i "/+found/d" $file_contexts
 		$ebinner/make_ext4fs -J -T $UTC -S $file_contexts -l $img_size -C $fs_config -L $name -a $name $out_img $in_files
 	else
-		$ebinner/mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size
+		mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size
 		${su} $ebinner/e2fsdroid -e -T $UTC $extrw -C $fs_config -S $file_contexts $rw -f $in_files -a $mount_path $out_img
 	fi
 fi
@@ -647,7 +647,7 @@ yecho "压缩img中..."
 resize2fs -f -M $out_img
 fi
 if [ "$pack_sparse" = "1" ] || [ "$isdat" = "1" ];then
-	$ebinner/img2simg $out_img $tempdir/${name}.s.img
+	img2simg $out_img $tempdir/${name}.s.img
 	mv -f $tempdir/${name}.s.img $tempdir/${name}.img
 fi
 
@@ -778,7 +778,7 @@ rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt c
 yecho "解包$sf中..."
 if [ "$info" = "sparse" ];then
 	yecho "当前sparseimg转换为rimg中..."
-	$ebinner/simg2img $infile $tempdir/$sf.img >> $tiklog
+	simg2img $infile $tempdir/$sf.img >> $tiklog
 	yecho "解压rimg中..."
 	infile=$tempdir/${sf}.img && getinfo $infile && imgextra
 elif [ "$info" = "dtbo" ];then
@@ -822,7 +822,7 @@ elif [ "$info" = "payload" ];then
 		done
 	fi
 elif [ "$info" = "win000" ];then
-	${su} $ebinner/simg2img *${sf}.win* $PROJECT_DIR/${sf}.win >> $tiklog
+	${su} simg2img *${sf}.win* $PROJECT_DIR/${sf}.win >> $tiklog
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/${sf}.win $PROJECT_DIR >> $tiklog
 elif [ "$info" = "win" ];then
 	${su} python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
@@ -842,7 +842,7 @@ cleantemp
 #Img解包
 function imgextra(){
 if [ "$info" = "ext" ]; then
-	${su} python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
+	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
 	echo "ext4" >>$PROJECT_DIR/config/${sf}_type.txt
 	if [ ! $? = "0" ];then
 		ywarn "解压失败"
