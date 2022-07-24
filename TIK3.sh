@@ -4,13 +4,13 @@ binner=$LOCALDIR/bin
 source $binner/settings
 tempdir=$LOCALDIR/TEMP
 tiklog=$LOCALDIR/TIK3_`date "+%y%m%d"`.log
-MBK="$binner/MBK"
+AIK="$binner/AIK"
 platform=$(uname -m)
 ebinner="$binner/Linux/$platform"
 mkdtimg_tool="$binner/mkdtboimg.py"
 dtc="$ebinner/dtc"
 yecho(){ echo -e "\033[36m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
-rmdir(){ if [ -d "$1" ];then rm -rf $1 ;fi ; }	#显示打印
+rmdire(){ if [ -d "$1" ];then sudo rm -rf $1 ;fi ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
 ysuc(){ echo -e "\033[32m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 getinfo(){ export info=$($ebinner/gettype -i $1) ; }
@@ -100,6 +100,9 @@ clear && cd $PROJECT_DIR
 if [[ ! -d "config" ]]; then
 	ywarn "项目已损坏！"
 	menu
+fi
+if [[ ! -d "${PROJECT_DIR}/TI_out" ]]; then
+	mkdir ${PROJECT_DIR}/TI_out
 fi
 echo -e "\n"
 echo -e " \033[31m>ROM菜单 \033[0m\n"
@@ -416,10 +419,10 @@ echo -e "   [0]- 打包所有镜像\n"
 	done
 fi
 
-if ls -d config/*.img >/dev/null 2>&1;then
-	for packs in $(ls config/*.img)
+if ls -d config/*.info >/dev/null 2>&1;then
+	for packs in $(ls config/*.info)
 	do
-	sf=$(basename $packs | sed 's/.img//g')
+	sf=$(basename $packs | sed 's/.info//g')
 	if [ -f "$packs" ] ; then
 		partn=$((partn+1))
 		echo -e "   [$partn]- $sf <bootimg>\n"
@@ -597,9 +600,6 @@ packChoo
 
 #
 inpacker(){
-if [[ ! -d "${PROJECT_DIR}/TI_out" ]]; then
-	mkdir ${PROJECT_DIR}/TI_out
-fi
 source $binner/settings && cleantemp
 name=${1}
 mount_path="/$name"
@@ -673,14 +673,16 @@ fi
 cleantemp
 }
 
-#boot打包——magiskboot
+#boot打包—AIK
 bootpac(){
-if [[ ! -d "${PROJECT_DIR}/TI_out" ]]; then
-	mkdir ${PROJECT_DIR}/TI_out
-fi
 sf=${1}
-${su} $MBK/repackimg.sh $PROJECT_DIR/config/$sf.img $PROJECT_DIR/$sf
-mv -f $PROJECT_DIR/$sf/new-boot.img $PROJECT_DIR/TI_out/$sf.img
+cp -afrv $PROJECT_DIR/$sf/* $AIK > /dev/null
+$AIK/repackimg.sh --forceelf
+if [ -e $AIK/unpadded-new.img ];then
+  mv $AIK/unpadded-new.img $PROJECT_DIR/exaid/
+fi
+mv -f $AIK/image-new.img $PROJECT_DIR/TI_out/$sf.img
+$AIK/cleanup.sh
 sleep $sleeptime
 }
 
@@ -771,7 +773,7 @@ if [[ ! -d "$PROJECT_DIR/config" ]]; then
     mkdir $PROJECT_DIR/config
 fi
 cleantemp
-${su} rmdir ${sf} ${sf}_dtbs ${sf}_dtbo >> $tiklog
+rmdire ${sf} ${sf}_dtbs ${sf}_dtbo >> $tiklog
 rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt
 yecho "解包$sf中..."
 if [ "$info" = "sparse" ];then
@@ -868,13 +870,12 @@ elif [ "$info" = "super" ];then
         fi
 	fi
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
-	${su} mkdir $sf && cd $sf
-	${su} bash $MBK/unpackimg.sh $infile >> $PROJECT_DIR/config/$sf.info
-	${su} cp -f $infile $PROJECT_DIR/config
+	${su} mkdir $sf
+	${su} $AIK/unpackimg.sh $infile $PROJECT_DIR >> $PROJECT_DIR/config/$sf.info
+	${su} mv $AIK/ramdisk $AIK/split_img $PROJECT_DIR/$sf
     if [[ $userid = "root" ]]; then
         ${su} chmod 777 -R ./$sf
     fi
-	cd $PROJECT_DIR
 else
 	ywarn "未知格式！请附带文件提交issue!"
 	sleep $sleeptime
@@ -1297,7 +1298,7 @@ menu
 # 启动检查、配置环境
 function checkpath(){
 clear && cd $LOCALDIR
-packages="python3 sed python3-pip brotli resize2fs curl default-jre bc android-sdk-libsparse-utils aria2 openjdk-11-jre p7zip-full"
+packages="python3 mke2fs simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
 	PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
 	echo -e "\033[31m $(cat $binner/banners/1) \033[0m"
@@ -1316,6 +1317,7 @@ if [[ ! -f "$binner/depment" ]]; then
     sleep $sleeptime
     yecho "更换北外大源..."
     ${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
+    ${su} sed -i 's/ports.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
     ${su} sed -i 's/archive.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
     ${su} sed -i 's/security.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
     yecho "正在更新软件列表..."
