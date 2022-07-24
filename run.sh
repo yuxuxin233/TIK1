@@ -1298,7 +1298,7 @@ menu
 # 启动检查、配置环境
 function checkpath(){
 clear && cd $LOCALDIR
-packages="python3 mke2fs simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio aria2 p7zip-full"
+packages="python3 mke2fs simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
 	PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
 	echo -e "\033[31m $(cat $binner/banners/1) \033[0m"
