@@ -6,7 +6,16 @@ tempdir=$LOCALDIR/TEMP
 tiklog=$LOCALDIR/TIK3_`date "+%y%m%d"`.log
 AIK="$binner/AIK"
 platform=$(uname -m)
-ebinner="$binner/Linux/$platform"
+# Add for cygwin by affggh
+if [ "$(uname -o)" = "Cygwin" ]; then
+  source $binner/log.sh
+  [ "${platform}" = "x86_64" ] || ( LOGE "Platform not support if cygwin32 !" && exit 1 )
+  LOGI "Detect cygwin64 env..."
+  ebinner="$binner/Cygwin/$platform"
+else
+  ebinner="$binner/Linux/$platform"
+fi
+
 mkdtimg_tool="$binner/mkdtboimg.py"
 dtc="$ebinner/dtc"
 yecho(){ echo -e "\033[36m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
@@ -27,6 +36,12 @@ from=$(echo $content| cut -d \" -f 8)
 author=$(echo $content| cut -d \" -f 12)
 echo -e "\033[31m $(cat $binner/banners/$banner) \033[0m"
 echo 
+
+# Add modified version
+if [ "$(uname -o)" = "Cygwin" ]; then
+  printf "\e[5;16H\e[92;44m Cygwin64 Modified Edition \e[0m"
+  printf "\e[8;0H"
+fi
 
 echo -ne "\033[36m “$shiju”"
 echo -e "\033[36m---$author《$from》\033[0m"
@@ -1297,6 +1312,19 @@ menu
 
 # 启动检查、配置环境
 function checkpath(){
+  # Cygwin Hack
+  if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
+    PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
+    python3 -m pip install --upgrade pip -i $PIP_MIRROR
+    pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
+    pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
+    touch "$binner/depment"
+  fi
+  # Hack
+  if [ "$(uname -o)" = "Cygwin" ]; then
+    userid="$USERNAME"
+  fi
+
 clear && cd $LOCALDIR
 packages="python3 mke2fs simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
