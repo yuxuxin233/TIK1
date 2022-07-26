@@ -6,12 +6,15 @@ tempdir=$LOCALDIR/TEMP
 tiklog=$LOCALDIR/TIK3_`date "+%y%m%d"`.log
 AIK="$binner/AIK"
 platform=$(uname -m)
+ostype=$(uname -o)
 # Add for cygwin by affggh
-if [ "$(uname -o)" = "Cygwin" ]; then
+if [ "$ostype" = "Cygwin" ]; then
   source $binner/log.sh
   [ "${platform}" = "x86_64" ] || ( LOGE "Platform not support if cygwin32 !" && exit 1 )
-  LOGI "Detect cygwin64 env..."
+  LOGI "检测到Cygwin64 运行环境..."
   ebinner="$binner/Cygwin/$platform"
+  export PATH=$ebinner:$binner/Cygwin/jdk-18.0.1.1:$PATH
+  sleep $sleeptime
 else
   ebinner="$binner/Linux/$platform"
 fi
@@ -25,7 +28,11 @@ ysuc(){ echo -e "\033[32m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 getinfo(){ export info=$($ebinner/gettype -i $1) ; }
 getsize(){ export filesize=$(du -sb $1 | awk '{print $1}' | bc -q) ; }
 
-cleantemp(){ sudo rm -rf $tempdir/* ; }
+if [ $(uname -o) = "Cygwin" ]; then
+  cleantemp(){ rm -rf $tempdir/* ; }
+else
+  cleantemp(){ sudo rm -rf $tempdir/* ; }
+fi
 
 # 项目菜单
 function promenu(){
@@ -73,6 +80,7 @@ elif [ "$op_pro" == "88" ]; then
 	echo "维护中..."
 	echo ""
 	sleep $sleeptime
+	return 0
 	miuiupdate
 elif [ "$op_pro" == "00" ]; then
 	read -p "  请输入你要删除的项目序号：" op_pro
@@ -989,7 +997,7 @@ if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
 	do 
 	if [ -f "$zip0" ]; then
 		getsize $zip0 >/dev/null 2>&1
-		if [ $filesize -gt $plugromlit ];then
+		if [ "$filesize" -gt "$plugromlit" ];then
 		zip=$(echo "$zip0" )
 		zipn=$((zipn+1))
 		echo -e "   [$zipn]- $zip\n"
@@ -1314,6 +1322,20 @@ menu
 function checkpath(){
   # Cygwin Hack
   if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
+	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib"
+	if [ ! -f "$binner/Cygwin/setup-x86_64.exe" ]; then
+	  LOGE "安装程序丢失，怎么肥四捏..." && exit 1
+	fi
+	LOGI "安装Cygwin必要依赖... 请耐心等待程序运行结束..."
+	$binner/Cygwin/setup-x86_64.exe -q -P "${packages}"
+	# wait until install done
+	while(ps -W | grep "setup-x86_64.exe">/dev/null);do sleep 3; done
+
+    # Install open-jdk-18 for windows  jdk-18.0.1.1
+	jdk_url='https://download.java.net/java/GA/jdk18.0.1.1/65ae32619e2f40f3a9af3af1851d6e19/2/GPL/openjdk-18.0.1.1_windows-x64_bin.zip'
+	aria2c "$jdk_url" -o jdk.zip
+	7za x "jdk.zip" -o"$binner/Cygwin"
+
     PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
     python3 -m pip install --upgrade pip -i $PIP_MIRROR
     pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
