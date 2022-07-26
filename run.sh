@@ -14,7 +14,7 @@ rmdire(){ if [ -d "$1" ];then sudo rm -rf $1 ;fi ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
 ysuc(){ echo -e "\033[32m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 getinfo(){ export info=$($ebinner/gettype -i $1) ; }
-getsize(){ export filesize=$(du -sb $1 | awk '{print $1}' | bc -q) ; }
+getsize(){ export filesize=$(stat -c "%s" "$1") ; }
 
 cleantemp(){ sudo rm -rf $tempdir/* ; }
 
