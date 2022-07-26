@@ -1332,10 +1332,12 @@ function checkpath(){
 	while(ps -W | grep "setup-x86_64.exe">/dev/null);do sleep 3; done
 
     # Install open-jdk-18 for windows  jdk-18.0.1.1
+	LOGI "安装openjdk 18.0.1.1"
 	jdk_url='https://download.java.net/java/GA/jdk18.0.1.1/65ae32619e2f40f3a9af3af1851d6e19/2/GPL/openjdk-18.0.1.1_windows-x64_bin.zip'
 	aria2c "$jdk_url" -o jdk.zip
 	7za x "jdk.zip" -o"$binner/Cygwin"
 
+    LOGI "安装python依赖"
     PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
     python3 -m pip install --upgrade pip -i $PIP_MIRROR
     pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
