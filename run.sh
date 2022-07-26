@@ -823,9 +823,9 @@ elif [ "$info" = "payload" ];then
 	fi
 elif [ "$info" = "win000" ];then
 	${su} simg2img *${sf}.win* $PROJECT_DIR/${sf}.win >> $tiklog
-	${su} python3 $binner/imgextractor.py $PROJECT_DIR/${sf}.win $PROJECT_DIR >> $tiklog
+	sudo python3 $binner/imgextractor.py $PROJECT_DIR/${sf}.win $PROJECT_DIR >> $tiklog
 elif [ "$info" = "win" ];then
-	${su} python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
+	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
 elif [ "$info" = "dat.1" ];then
 	${su} cat ./${sf}.new.dat.{1..999} >> $tempdir/${sf}.new.dat
 	python3 $binner/sdat2img.py $sf.transfer.list $tempdir/${sf}.new.dat $tempdir/$sf.img >/dev/null 2>&1
@@ -1132,7 +1132,7 @@ else
 	mkdir $binner/subs/$zs
 	yecho "安装插件[$zs]中..."
 	7z x "$Sourcedir/$tzip" -o"$binner/subs/$zs" > /dev/null
-	${su} chmod -R 777 $binner/subs/$zs
+	sudo chmod -R 777 $binner/subs/$zs
 	ysuc "安装完成"
 	sleep $sleeptime
 fi
@@ -1325,10 +1325,10 @@ if [[ ! -f "$binner/depment" ]]; then
     yecho "正在安装必备软件包..."
     for i in $packages; do
         yecho "安装$i..."
-        ${su} apt-get install $i -y
+        sudo apt-get install $i -y
     done
-    ${su} apt --fix-broken install
-    ${su} apt update --fix-missing
+    sudo apt --fix-broken install
+    sudo apt update --fix-missing
 	pip3 install --upgrade pip -i $PIP_MIRROR
 	pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
 	pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
