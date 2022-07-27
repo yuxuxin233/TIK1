@@ -923,6 +923,10 @@ fi
 
 #手动打包Super
 function packsuper(){
+# Fix cygwin path issue
+if [ "$ostype" = "Cygwin" ]; then
+	PROJECT_DIR=`cygpath -w "$PROJECT_DIR"`
+fi
 clear && rm -f $PROJECT_DIR/super/super.img
 if [[ ! -d "super" ]]; then
 	mkdir $PROJECT_DIR/super
@@ -953,6 +957,12 @@ packmenu
 function insuper(){
 Imgdir=$1
 outputimg=$2
+# Fix cygwin path issue
+if [ "$ostype" = "Cygwin" ]; then
+	Imgdir=`cygpath -w "$Imgdir"`
+	outputimg=`cygpath -w "$outputimg"`
+fi
+
 group_size=0
 if [[ $userid = "root" ]]; then
 	${su} chmod -R 777 $Imgdir
