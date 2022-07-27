@@ -14,6 +14,13 @@ if [ "$ostype" = "Cygwin" ]; then
   LOGI "检测到Cygwin64 运行环境..."
   ebinner="$binner/Cygwin/$platform"
   export PATH=$ebinner:$binner/Cygwin/jdk-18.0.1.1:$PATH
+  export ostype
+  # Hack : cygwin dose not have sudo
+  # you can use cygstart --action=runas
+  sudo() {
+    LOGW "Cygwin 没有sudo命令，因此直接执行"
+	$@
+  }
   sleep $sleeptime
 else
   ebinner="$binner/Linux/$platform"
@@ -27,12 +34,7 @@ ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
 ysuc(){ echo -e "\033[32m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 getinfo(){ export info=$($ebinner/gettype -i $1) ; }
 getsize(){ export filesize=$(stat -c "%s" "$1") ; }
-
-if [ $(uname -o) = "Cygwin" ]; then
-  cleantemp(){ rm -rf $tempdir/* ; }
-else
-  cleantemp(){ sudo rm -rf $tempdir/* ; }
-fi
+cleantemp(){ sudo rm -rf $tempdir/* ; }
 
 # 项目菜单
 function promenu(){
@@ -1322,7 +1324,9 @@ menu
 function checkpath(){
   # Cygwin Hack
   if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
-	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib"
+	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib,wget"
+	# AIK for cygwin extra packages
+	packages+=",file,lzop,xz,gzip,bzip2,libintl8,liblzo2_2"
 	if [ ! -f "$binner/Cygwin/setup-x86_64.exe" ]; then
 	  LOGE "安装程序丢失，怎么肥四捏..." && exit 1
 	fi
@@ -1332,16 +1336,23 @@ function checkpath(){
 	while(ps -W | grep "setup-x86_64.exe">/dev/null);do sleep 3; done
 
     # Install open-jdk-18 for windows  jdk-18.0.1.1
-	LOGI "安装openjdk 18.0.1.1"
-	jdk_url='https://download.java.net/java/GA/jdk18.0.1.1/65ae32619e2f40f3a9af3af1851d6e19/2/GPL/openjdk-18.0.1.1_windows-x64_bin.zip'
-	aria2c "$jdk_url" -o jdk.zip
-	7za x "jdk.zip" -o"$binner/Cygwin"
+	#LOGI "安装openjdk 18.0.1.1"
+	#jdk_url='https://download.java.net/java/GA/jdk18.0.1.1/65ae32619e2f40f3a9af3af1851d6e19/2/GPL/openjdk-18.0.1.1_windows-x64_bin.zip'
+	#aria2c "$jdk_url" -o jdk.zip
+	#7za x "jdk.zip" -o"$binner/Cygwin"
 
     LOGI "安装python依赖"
     PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
     python3 -m pip install --upgrade pip -i $PIP_MIRROR
     pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
     pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
+
+    LOGI "编译 symlink 命令"
+	LOGI "CC\tbin/Cygwin/symlink.c"
+	gcc $binner/Cygwin/symlink.c -o $binner/Cygwin/x86_64/symlink || (LOGE "编译失败..." && exit 1 )
+	LOGI "STRIP\tbin/Cygwin/x86_64/symlink"
+	strip $binner/Cygwin/x86_64/symlink
+
     touch "$binner/depment"
   fi
   # Hack
