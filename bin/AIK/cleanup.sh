@@ -14,6 +14,10 @@ case $(uname -s) in
   *) statarg="-c %U";;
 esac;
 
+if [ "$(uname -o)" = "Cygwin" ]; then
+  unset sudo
+fi
+
 aik="${BASH_SOURCE:-$0}";
 aik="$(dirname "$(readlink -f "$aik")")";
 bin="$aik/bin";

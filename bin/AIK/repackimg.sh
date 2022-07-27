@@ -15,6 +15,7 @@ case $(uname -s) in
   ;;
   *) plat="linux";;
 esac;
+if [ $(uname -o) = 'Cygwin' ]; then plat="cygwin"; fi
 arch=$plat/`uname -m`;
 
 aik="${BASH_SOURCE:-$0}";
@@ -38,7 +39,7 @@ case $plat in
       java() { "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin/java" "$@"; }
     fi;
   ;;
-  linux)
+  linux|cygwin)
     cpio=cpio;
     [ "$(cpio --version | head -n1 | rev | cut -d\  -f1 | rev)" = "2.13" ] && cpiowarning=1;
     statarg="-c %U";
