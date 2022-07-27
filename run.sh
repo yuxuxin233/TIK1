@@ -873,6 +873,12 @@ cleantemp
 
 #Img解包
 function imgextra(){
+# Fix cygwin path issue
+if [ "$ostype" = "Cygwin" ]; then
+	infile=`cygpath -w "$infile"`
+	PROJECT_DIR=`cygpath -w "$PROJECT_DIR"`
+fi
+
 if [ "$info" = "ext" ]; then
 	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR | tee $tiklog
 	echo "ext4" >>$PROJECT_DIR/config/${sf}_type.txt
