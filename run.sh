@@ -516,13 +516,13 @@ if [[ "$filed" = "0" ]]; then
 		eval "imgtype=\$type$filed"
 		yecho "打包$partname..."
 		if [[ "$imgtype" == "bootimg" ]];then
-			bootpac $partname >> $tiklog
+			bootpac $partname | tee $tiklog
 		elif [[ "$imgtype" == "dtb" ]];then
-			makedtb $partname >> $tiklog
+			makedtb $partname | tee $tiklog
 		elif [[ "$imgtype" == "dtbo" ]];then
-			makedtbo $partname >> $tiklog
+			makedtbo $partname | tee $tiklog
 		else
-			inpacker $partname >> $tiklog
+			inpacker $partname | tee $tiklog
 		fi
 	done
 elif [[ "$filed" = "55" ]]; then
@@ -561,13 +561,13 @@ elif [[ "$filed" = "55" ]]; then
 		if [[ "$pacall" == "1" ]] || [ "$imgcheck" != "0" ];then
 			yecho "打包$partname..."
 			if [[ "$imgtype" == "bootimg" ]];then
-				bootpac $partname >> $tiklog
+				bootpac $partname | tee $tiklog
 			elif [[ "$imgtype" == "dtb" ]];then
-				makedtb $partname >> $tiklog
+				makedtb $partname | tee $tiklog
 			elif [[ "$imgtype" == "dtbo" ]];then
-				makedtbo $partname >> $tiklog
+				makedtbo $partname | tee $tiklog
 				else
-			inpacker $partname >> $tiklog
+			inpacker $partname | tee $tiklog
 			fi
 		fi
 	done
@@ -607,13 +607,13 @@ elif [[ $filed =~ ^-?[1-9][0-9]*$ ]]; then
 		fi
 		yecho "打包$partname..."
 		if [[ "$imgtype" == "bootimg" ]];then
-			bootpac $partname >> $tiklog
+			bootpac $partname | tee $tiklog
 		elif [[ "$imgtype" == "dtb" ]];then
-			makedtb $partname >> $tiklog
+			makedtb $partname | tee $tiklog
 		elif [[ "$imgtype" == "dtbo" ]];then
-			makedtbo $partname >> $tiklog
+			makedtbo $partname | tee $tiklog
 		else
-			inpacker $partname >> $tiklog
+			inpacker $partname | tee $tiklog
 		fi
 	fi
 else
@@ -655,6 +655,13 @@ fi
 echo $img_size >$PROJECT_DIR/config/${name}_size.txt
 if [[ -f "dynamic_partitions_op_list" ]]; then
 sed -i "s/resize ${name}\s.*/resize ${name} $img_size/" $PROJECT_DIR/dynamic_partitions_op_list
+fi
+# weird path issue on cygwin
+if [ $ostype = 'Cygwin' ]; then
+	out_img=`cygpath -w "$out_img"`
+	fs_config=`cygpath -w "$fs_config"`
+	file_contexts=`cygpath -w "$file_contexts"`
+	in_files=`cygpath -w "$in_files"`
 fi
 if [[ "$imgtype" == "erofs" ]];then
 	${su} $ebinner/mkfs.erofs $erofslim --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files
@@ -798,12 +805,12 @@ if [[ ! -d "$PROJECT_DIR/config" ]]; then
     mkdir $PROJECT_DIR/config
 fi
 cleantemp
-rmdire ${sf} ${sf}_dtbs ${sf}_dtbo >> $tiklog
+rmdire ${sf} ${sf}_dtbs ${sf}_dtbo | tee $tiklog
 rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt
 yecho "解包$sf中..."
 if [ "$info" = "sparse" ];then
 	yecho "当前sparseimg转换为rimg中..."
-	simg2img $infile $tempdir/$sf.img >> $tiklog
+	simg2img $infile $tempdir/$sf.img | tee $tiklog
 	yecho "解压rimg中..."
 	infile=$tempdir/${sf}.img && getinfo $infile && imgextra
 elif [ "$info" = "dtbo" ];then
@@ -822,35 +829,35 @@ elif [ "$info" = "img" ];then
 elif [ "$info" = "ofp" ];then
 	read -p " ROM机型处理器为？[1]高通 [2]MTK	" ofpm
 	if [ "$ofpm" = "1" ]; then
-		python3 $binner/oppo_decrypt/ofp_qc_decrypt.py $infile $PROJECT_DIR/$sf >> $tiklog
+		python3 $binner/oppo_decrypt/ofp_qc_decrypt.py $infile $PROJECT_DIR/$sf | tee $tiklog
 	elif [ "$ofpm" = "2" ];then
-		python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf >> $tiklog
+		python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf | tee $tiklog
 	fi
 elif [ "$info" = "ozip" ];then
-	python3 $binner/oppo_decrypt/ozipdecrypt.py $infile >> $tiklog
+	python3 $binner/oppo_decrypt/ozipdecrypt.py $infile | tee $tiklog
 elif [ "$info" = "ops" ];then
-	python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf >> $tiklog
+	python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf | tee $tiklog
 elif [ "$info" = "payload" ];then
 	yecho "$sf所含分区列表："
 	$ebinner/payload-dumper-go -l $infile
 	read -p "请输入需要解压的分区名(空格隔开)/all[全部]	" extp </dev/tty
 	if [ "$extp" = "all" ];then 
-		$ebinner/payload-dumper-go $infile -o $PROJECT_DIR/payload >> $tiklog
+		$ebinner/payload-dumper-go $infile -o $PROJECT_DIR/payload | tee $tiklog
 	else
 		if [[ ! -d "payload" ]]; then
 			mkdir $PROJECT_DIR/payload
 		fi
 		for d in $extp
 		do
-			$ebinner/payload-dumper-go -p $d $infile -o $PROJECT_DIR/payload >> $tiklog
+			$ebinner/payload-dumper-go -p $d $infile -o $PROJECT_DIR/payload | tee $tiklog
 			#mv $PROJECT_DIR/payload${d}/* $PROJECT_DIR/payload && rm -fr payload${d}
 		done
 	fi
 elif [ "$info" = "win000" ];then
-	${su} simg2img *${sf}.win* $PROJECT_DIR/${sf}.win >> $tiklog
-	sudo python3 $binner/imgextractor.py $PROJECT_DIR/${sf}.win $PROJECT_DIR >> $tiklog
+	${su} simg2img *${sf}.win* $PROJECT_DIR/${sf}.win | tee $tiklog
+	sudo python3 $binner/imgextractor.py $PROJECT_DIR/${sf}.win $PROJECT_DIR | tee $tiklog
 elif [ "$info" = "win" ];then
-	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
+	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR | tee $tiklog
 elif [ "$info" = "dat.1" ];then
 	${su} cat ./${sf}.new.dat.{1..999} >> $tempdir/${sf}.new.dat
 	python3 $binner/sdat2img.py $sf.transfer.list $tempdir/${sf}.new.dat $tempdir/$sf.img >/dev/null 2>&1
@@ -867,13 +874,13 @@ cleantemp
 #Img解包
 function imgextra(){
 if [ "$info" = "ext" ]; then
-	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR >> $tiklog
+	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR | tee $tiklog
 	echo "ext4" >>$PROJECT_DIR/config/${sf}_type.txt
 	if [ ! $? = "0" ];then
 		ywarn "解压失败"
 	fi
 elif [ "$info" = "erofs" ];then
-	$ebinner/erofsUnpackRust $infile $PROJECT_DIR >> $tiklog
+	$ebinner/erofsUnpackRust $infile $PROJECT_DIR | tee $tiklog
 	echo "erofs" >>$PROJECT_DIR/config/${sf}_type.txt
 	if [ ! $? = "0" ];then
 		ywarn "解压失败"
@@ -903,9 +910,9 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
     fi
 else
 	ywarn "未知格式！请附带文件提交issue!"
-	sleep $sleeptime
+	# sleep $sleeptime
 fi
-sleep $sleeptime
+# sleep $sleeptime
 }
 
 #手动打包Super
