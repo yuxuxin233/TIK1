@@ -43,6 +43,15 @@ class Extractor(object):
         self.context = []
         self.fsconfig = []
 
+        # cygwin changes
+        self.ostype = os.getenv("OS")
+        self.cygsymlink = os.path.abspath(os.path.dirname(sys.argv[0])) + "Cygwin" + os.sep + "x86_64" + os.sep + "symlink"
+    
+    def __cygpath2dospath(self, p):
+        dospath = os.popen('cygpath -w "%s"' %p).readline()
+        print(dospath)
+        return dospath
+
     def __remove(self, path):
         if os.path.isfile(path):
             os.remove(path)  # remove the file
@@ -127,8 +136,12 @@ class Extractor(object):
                     if not os.path.isdir(dir_target):
                         os.makedirs(dir_target)
                     if os.name == 'posix':
-                        os.chmod(dir_target, int(mode, 8))
-                        os.chown(dir_target, uid, gid)
+                        # Add cygwin changes
+                        if self.ostype == 'Windows_NT':
+                            pass
+                        else:
+                            os.chmod(dir_target, int(mode, 8))
+                            os.chown(dir_target, uid, gid)
                     scan_dir(entry_inode, entry_inode_path)
                     if cap == '' and con == '':
                         tmppath=self.DIR + entry_inode_path
@@ -197,7 +210,7 @@ class Extractor(object):
                 elif entry_inode.is_file:
                     raw = entry_inode.open_read().read()
                     wdone = None
-                    if os.name == 'nt':
+                    if os.name == 'nt' or self.ostype == 'Windows_NT':
                         if entry_name.endswith('/'):
                             entry_name = entry_name[:-1]
                         file_target = self.EXTRACT_DIR + entry_inode_path.replace('/', os.sep).replace(' ','_').replace('"','')
@@ -211,8 +224,11 @@ class Extractor(object):
                             os.makedirs(os.path.dirname(file_target))
                         with open(file_target, 'wb') as out:
                             out.write(raw)
-                        os.chmod(file_target, int(mode, 8))
-                        os.chown(file_target, uid, gid)
+                        if self.ostype == 'Windows_NT':
+                            pass
+                        else:
+                            os.chmod(file_target, int(mode, 8))
+                            os.chown(file_target, uid, gid)
                     if cap == '' and con == '':
                         tmppath=self.DIR + entry_inode_path
                         if (tmppath).find(' ',1,len(tmppath))>0:
