@@ -1347,12 +1347,6 @@ function checkpath(){
     pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
     pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
 
-    LOGI "编译 symlink 命令"
-	LOGI "CC\tbin/Cygwin/symlink.c"
-	gcc $binner/Cygwin/symlink.c -o $binner/Cygwin/x86_64/symlink || (LOGE "编译失败..." && exit 1 )
-	LOGI "STRIP\tbin/Cygwin/x86_64/symlink"
-	strip $binner/Cygwin/x86_64/symlink
-
     touch "$binner/depment"
   fi
   # Hack
