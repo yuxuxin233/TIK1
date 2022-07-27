@@ -640,11 +640,11 @@ img_size0=$(cat $PROJECT_DIR/config/${name}_size.txt)
 img_size1=`du -sb $name | awk {'print $1'}`
 if [[ "$diysize" == "1" ]] && [ "$img_size0" -lt "$img_size1" ] ;then
 	ywarn "您设置的size过小,将动态调整size!"
-	img_size0=`echo "$img_size1 + 104857600" |bc`  
+	img_size0=`echo "$img_size1 + 41943040" |bc`  
 elif [[ "$diysize" == "1" ]] ;then
 	img_size0=$img_size0
 else
-	img_size0=`echo "$img_size1 + 104857600" |bc` 
+	img_size0=`echo "$img_size1 + 41943040" |bc` 
 fi
 img_size=`echo $img_size0 | sed 's/\..*//g'`
 size=`echo "$img_size0 / $BLOCKSIZE" |bc`
@@ -663,7 +663,7 @@ else
 		sed -i "/+found/d" $file_contexts
 		$ebinner/make_ext4fs -J -T $UTC -S $file_contexts -l $img_size -C $fs_config -L $name -a $name $out_img $in_files
 	else
-		mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size
+		mke2fs -O ^has_journal -L $name -I 256 -i 102400 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size
 		${su} $ebinner/e2fsdroid -e -T $UTC $extrw -C $fs_config -S $file_contexts $rw -f $in_files -a $mount_path $out_img
 	fi
 fi
