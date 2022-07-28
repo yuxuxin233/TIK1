@@ -258,7 +258,7 @@ echo -e "\033[33m [Img]文件\033[0m\n"
 			echo -e "   [$filen]- $img0 <BOOT>\n"
 		elif [ "$info" == "vendor_boot" ]; then
 			echo -e "   [$filen]- $img0 <VENDOR_BOOT>\n"
-		elif [ "$info" == "super" ]; then
+		elif [ "$info" == "super" ] || [ $(echo "$img0" | grep "super") ]; then
 			echo -e "   [$filen]- $img0 <SUPER>\n"
 		else
 			ywarn "   [$filen]- $img0 <UNKNOWN>\n"
