@@ -63,7 +63,7 @@ pro=0 && del=0 && chooPro=0
 if ls TI_* >/dev/null 2>&1;then
 	for pros in $(ls -d TI_*/| sed 's/\///g')
 	do 
-		if [ -d "./$pros" ];then
+		if [ -d "$pros" ];then
 			pro=$((pro+1))
 			echo -e "   [$pro]  $pros\n"
 			eval "pro$pro=$pros" 
@@ -863,7 +863,7 @@ elif [ "$info" = "win000" ];then
 elif [ "$info" = "win" ];then
 	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR | tee $tiklog
 elif [ "$info" = "dat.1" ];then
-	${su} cat ./${sf}.new.dat.{1..999} >> $tempdir/${sf}.new.dat
+	${su} cat ${sf}.new.dat.{1..999} >> $tempdir/${sf}.new.dat
 	python3 $binner/sdat2img.py $sf.transfer.list $tempdir/${sf}.new.dat $tempdir/$sf.img >/dev/null 2>&1
 	infile=$tempdir/${sf}.img && getinfo $infile && imgextra
 else
@@ -916,7 +916,7 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
 	${su} $AIK/unpackimg.sh $infile $PROJECT_DIR >> $PROJECT_DIR/config/$sf.info
 	${su} mv $AIK/ramdisk $AIK/split_img $PROJECT_DIR/$sf
     if [[ $userid = "root" ]]; then
-        ${su} chmod 777 -R ./$sf
+        ${su} chmod 777 -R $sf
     fi
 else
 	ywarn "未知格式！请附带文件提交issue!"
@@ -1094,7 +1094,7 @@ echo -e " >\033[31m插件列表 \033[0m\n"
 subn=0 && mysubs=()
 for sub in $(ls)
 do 
-	if [ -d "./$sub" ];then
+	if [ -d "$sub" ];then
 	subn=$((subn+1))
 	echo -e "   [$subn]- $sub\n"
 	eval "mysubs$subn=$sub" 
@@ -1267,9 +1267,9 @@ function autounpack(){
 cd $PROJECT_DIR && mkdir config && cleantemp
 yecho "自动解包开始！"
 #VAB自动解包
-if [ -f "./payload.bin" ]; then
+if [ -f "payload.bin" ]; then
 	yecho "解包 payload.bin..."
-	$ebinner/payload-dumper-go ./payload.bin -o ./payload
+	$ebinner/payload-dumper-go $PROJECT_DIR/payload.bin -o $PROJECT_DIR/payload
 	yecho "payload.bin解包完成！"
 	rm -rf payload.bin && rm -rf care_map.pb && rm -rf apex_info.pb&& rm -rf payload_properties.txt
 	for infile in $(ls $PROJECT_DIR/payload/*.img)
@@ -1296,7 +1296,7 @@ if ls *.new.dat.br >/dev/null 2>&1;then
 		${su} brotli -d $PROJECT_DIR/$infile -o $tempdir/$sf.new.dat > /dev/null
 		python3 $binner/sdat2img.py $sf.transfer.list $tempdir/$sf.new.dat $tempdir/$sf.img >/dev/null 2>&1
 		infile=$tempdir/${sf}.img && getinfo $infile && imgextra
-		rm -rf ./${sf}.new.dat.br && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
+		rm -rf ${sf}.new.dat.br ${sf}.patch.dat ${sf}.transfer.list > /dev/null 2>&1
 	done
 fi
 
