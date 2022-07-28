@@ -1348,6 +1348,10 @@ menu
 # 启动检查、配置环境
 function checkpath(){
 clear && cd $LOCALDIR
+if [ "$platform" = "aarch64" ];then
+	command+=" -b /sdcard"
+    su="sudo "
+fi
   # Cygwin Hack
   if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
 	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib,wget"
@@ -1419,10 +1423,6 @@ if [[ ! -d "TEMP" ]]; then
 	mkdir TEMP
 fi
 cleantemp && rm -rf *.log
-if [ "$platform" = "aarch64" ];then
-	command+=" -b /sdcard"
-    su="sudo "
-fi
 if [[ $userid = "root" ]]; then
 	${su} chmod 777 -R *
 fi
