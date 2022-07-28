@@ -664,6 +664,7 @@ if [ $ostype = 'Cygwin' ]; then
 	in_files=`cygpath -w "$in_files"`
 fi
 if [[ "$imgtype" == "erofs" ]];then
+	EROFS_FLAG=true
 	${su} $ebinner/mkfs.erofs $erofslim --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files
 else
 	if [ "$pack_e2" = "0" ];then
@@ -676,7 +677,12 @@ else
 fi
 if [[ "$diysize" == "" ]] ;then
 yecho "压缩img中..."
-resize2fs -f -M $out_img
+	if $EROFS_FLAG; then
+		LOGI "Erofs镜像，跳过e2fs压缩..."
+		EROFS_FLAG=false
+	else
+		resize2fs -f -M $out_img
+	fi
 fi
 if [ "$pack_sparse" = "1" ] || [ "$isdat" = "1" ];then
 	img2simg $out_img $tempdir/${name}.s.img
