@@ -25,7 +25,7 @@ if [ "$ostype" = "Cygwin" ]; then
 else
   ebinner="$binner/Linux/$platform"
 fi
-
+PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
 mkdtimg_tool="$binner/mkdtboimg.py"
 dtc="$ebinner/dtc"
 yecho(){ echo -e "\033[36m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
@@ -260,14 +260,13 @@ echo -e "\033[33m [Img]文件\033[0m\n"
 			echo -e "   [$filen]- $img0 <VENDOR_BOOT>\n"
 		elif [ "$info" == "super" ] || [ $(echo "$img0" | grep "super") ]; then
 			echo -e "   [$filen]- $img0 <SUPER>\n"
+		elif [ "$info" == "sparse" ]; then
+			echo -e "   [$filen]- $img0 <Sparse>\n"
 		else
 			ywarn "   [$filen]- $img0 <UNKNOWN>\n"
 		fi
 		eval "file$filen=$img0" 
 		eval "info$filen=img"
-		if [ "$info" == "sparse" ]; then
-			echo -e "   [$filen]- $img0 <Sparse>\n"
-		fi
 	fi
 	done
 fi
@@ -856,7 +855,6 @@ elif [ "$info" = "payload" ];then
 		for d in $extp
 		do
 			$ebinner/payload-dumper-go -p $d $infile -o $PROJECT_DIR/payload | tee $tiklog
-			#mv $PROJECT_DIR/payload${d}/* $PROJECT_DIR/payload && rm -fr payload${d}
 		done
 	fi
 elif [ "$info" = "win000" ];then
@@ -899,7 +897,7 @@ elif [ "$info" = "erofs" ];then
 	fi
 elif [ "$info" = "dtbo" ];then
 	undtbo
-elif [ "$info" = "super" ];then
+elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
 	super_size=$(wc -c <$infile | awk '{print $1}' | bc -q)
 	yecho "super分区大小: $super_size bytes  解压${sf}.img中..."
 	mkdir super
@@ -922,9 +920,7 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
     fi
 else
 	ywarn "未知格式！请附带文件提交issue!"
-	# sleep $sleeptime
 fi
-# sleep $sleeptime
 }
 
 #手动打包Super
@@ -1009,7 +1005,7 @@ done
 
 superpa+=" --group main:$group_size "
 superpa+="-F --output $outputimg"
-if ( $ebinner/lpmake $superpa 2>&1 );then
+if ( $ebinner/lpmake $superpa | tee $tiklog );then
     ysuc "成功创建super.img!"
 else
     ywarn "创建super.img失败！"
@@ -1351,6 +1347,7 @@ menu
 
 # 启动检查、配置环境
 function checkpath(){
+clear && cd $LOCALDIR
   # Cygwin Hack
   if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
 	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib,wget"
@@ -1371,7 +1368,6 @@ function checkpath(){
 	#7za x "jdk.zip" -o"$binner/Cygwin"
 
     LOGI "安装python依赖"
-    PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
     python3 -m pip install --upgrade pip -i $PIP_MIRROR
     pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
     pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
@@ -1383,10 +1379,8 @@ function checkpath(){
     userid="$USERNAME"
   fi
 
-clear && cd $LOCALDIR
 packages="python3 simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
-	PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
 	echo -e "\033[31m $(cat $binner/banners/1) \033[0m"
 	if [[ $(whoami) = "root" ]]; then
 		userid="root"
@@ -1402,10 +1396,11 @@ if [[ ! -f "$binner/depment" ]]; then
 	yecho "开始配置环境..."
     sleep $sleeptime
     yecho "更换北外大源..."
-    ${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
-    ${su} sed -i 's/ports.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
-    ${su} sed -i 's/archive.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
-    ${su} sed -i 's/security.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
+    sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+    sudo sed -i 's/ports.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
+    sudo sed -i 's/archive.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
+    sudo sed -i 's/security.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
+	sudo chmod 0777 /etc/apt/sources.list
     yecho "正在更新软件列表..."
     ${su} apt-get update  -y && ${su} apt-get upgrade -y 
     yecho "正在安装必备软件包..."
@@ -1420,9 +1415,6 @@ if [[ ! -f "$binner/depment" ]]; then
 	pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
 	touch $binner/depment
 fi
-if [[ $userid = "root" ]]; then
-	${su} chmod 777 -R *
-fi
 if [[ ! -d "TEMP" ]]; then
 	mkdir TEMP
 fi
@@ -1430,6 +1422,9 @@ cleantemp && rm -rf *.log
 if [ "$platform" = "aarch64" ];then
 	command+=" -b /sdcard"
     su="sudo "
+fi
+if [[ $userid = "root" ]]; then
+	${su} chmod 777 -R *
 fi
 if [[ -d "/sdcard" ]];then
 	Sourcedir=/sdcard/$mydir
