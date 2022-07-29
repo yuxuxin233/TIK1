@@ -77,7 +77,7 @@ echo -e "   12>[Payload]V.Boot_header\n"
 echo -e "   13>返回上一级菜单"
 echo -e "   --------------------------"
 read -p "   请输入编号: " op_pro
-if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 12 ]; then
+if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 11 ]; then
 	#dyset$op_pro
 	echo "  维护中..." && sleep $sleeptime
 elif [ "$op_pro" == "13" ]; then
@@ -271,19 +271,19 @@ esac
 
 function dyset1()
 {
-echo "  分区打包扇区/块大小：$BLOCKSIZE"
-read -p "  请输入: " BLOCKSIZE
-if [[ ! "$BLOCKSIZE" == "" ]]; then
-sed -i 's/^BLOCKSIZE=.*/BLOCKSIZE='$BLOCKSIZE'/'  $binner/settings
+echo "  当前动态分区簇名/GROUPNAME：$super_group"
+read -p "  请输入（无特殊字符）: " super_group
+if [[ ! "$super_group" == "" ]]; then
+sed -i 's/^super_group=.*/super_group='$super_group'/'  $binner/settings
 fi
 }
 
-function dyset2()
+function dyset9()
 {
-echo "  分区打包扇区/块大小：$BLOCKSIZE"
-read -p "  请输入: " BLOCKSIZE
-if [[ ! "$BLOCKSIZE" == "" ]]; then
-sed -i 's/^BLOCKSIZE=.*/BLOCKSIZE='$BLOCKSIZE'/'  $binner/settings
+echo "  当前动态分区内逻辑分区表：$superpart_list"
+read -p "  请输入（空格隔开）: " superpart_list
+if [[ ! "$superpart_list" == "" ]]; then
+sed -i 's/^superpart_list=".*/superpart_list="'$superpart_list'"/'  $binner/settings
 fi
 }
 
@@ -313,3 +313,5 @@ extrw=
 utcstamp=
 diysize=
 diyimgtype=
+super_group=qti_dynamic_partitions
+superpart_list="system odm vendor system_ext product"

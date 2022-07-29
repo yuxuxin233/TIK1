@@ -25,6 +25,7 @@ if [ "$ostype" = "Cygwin" ]; then
 else
   ebinner="$binner/Linux/$platform"
 fi
+export LD_LIBRARY_PATH=$ebinner/lib64
 PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
 mkdtimg_tool="$binner/mkdtboimg.py"
 dtc="$ebinner/dtc"
@@ -82,7 +83,7 @@ elif [ "$op_pro" == "88" ]; then
 	echo "维护中..."
 	echo ""
 	sleep $sleeptime
-	return 0
+	#return 0
 	miuiupdate
 elif [ "$op_pro" == "00" ]; then
 	read -p "  请输入你要删除的项目序号：" op_pro
@@ -120,6 +121,10 @@ fi
 # 主菜单
 function menu(){
 PROJECT_DIR=$LOCALDIR/$project
+# Fix cygwin path issue
+if [ "$ostype" = "Cygwin" ]; then
+	PROJECT_DIR=`cygpath -w "$PROJECT_DIR"`
+fi
 clear && cd $PROJECT_DIR
 
 if [[ ! -d "config" ]]; then
@@ -483,7 +488,7 @@ if ls -d config/dtboinfo_* >/dev/null 2>&1;then
 fi
 
 echo -e ""
-echo -e "\033[33m  [55] 循环打包  [66] 打包Super  [77]菜单\033[0m"
+echo -e "\033[33m [55] 循环打包 [66] 打包Super [77] 打包Payload [88]菜单\033[0m"
 echo -e "  --------------------------------------"
 read -p "  请输入对应序号：" filed
 
@@ -573,6 +578,8 @@ elif [[ "$filed" = "55" ]]; then
 elif [[ "$filed" = "66" ]]; then
 	packsuper
 elif [[ "$filed" = "77" ]]; then
+	packpayload
+elif [[ "$filed" = "88" ]]; then
 	menu
 elif [[ $filed =~ ^-?[1-9][0-9]*$ ]]; then
 	if [ $filed -gt $partn ];then
@@ -925,10 +932,6 @@ fi
 
 #手动打包Super
 function packsuper(){
-# Fix cygwin path issue
-if [ "$ostype" = "Cygwin" ]; then
-	PROJECT_DIR=`cygpath -w "$PROJECT_DIR"`
-fi
 clear && rm -f $PROJECT_DIR/super/super.img
 if [[ ! -d "super" ]]; then
 	mkdir $PROJECT_DIR/super
@@ -947,11 +950,31 @@ if [[ -f $PROJECT_DIR/config/super_size.txt ]]; then
 supersize=$(cat $PROJECT_DIR/config/super_size.txt)
 read -p "检测到分解super大小为$supersize,是否按此大小继续打包？[1/0]" iforsize
 fi
-if [ "$iforsize" == "0" ];then
+if [ ! "$iforsize" == "1" ];then
 	read -p "请输入super分区大小（字节数，常见9126805504 10200547328 16106127360）	" supersize
 fi
 yecho "打包到super/super.img..."
 insuper $PROJECT_DIR/super $PROJECT_DIR/super/super.img
+packmenu
+}
+
+#手动打包Payload
+function packpayload(){
+clear && rm -f $PROJECT_DIR/super/super.img
+if [[ ! -d "super" ]]; then
+	mkdir $PROJECT_DIR/super
+fi
+ywarn "请将所有分区镜像放置于$PROJECT_DIR/payload中（非super）！"
+ywarn "很耗时、很费CPU、很费内存，由于无官方签名故意义不大，请考虑后使用"
+if [[ -f $PROJECT_DIR/config/super_size.txt ]]; then
+supersize=$(cat $PROJECT_DIR/config/super_size.txt)
+read -p "检测到分解super大小为$supersize,是否按此大小继续打包？[1/0]" iforsize
+fi
+if [ ! "$iforsize" == "1" ];then
+	read -p "请输入super分区大小（字节数，常见9126805504 10200547328 16106127360）	" supersize
+fi
+yecho "打包到$PROJECT_DIR/TI_out/payload..."
+inpayload $supersize
 packmenu
 }
 
@@ -1009,6 +1032,33 @@ if ( $ebinner/lpmake $superpa | tee $tiklog );then
     ysuc "成功创建super.img!"
 else
     ywarn "创建super.img失败！"
+fi
+sleep $sleeptime
+}
+
+#打包Payload
+function inpayload(){
+supersize=$1
+rm -rf $PROJECT_DIR/TI_out/payload $PROJECT_DIR/payload/dynamic_partitions_info.txt && mkdir $PROJECT_DIR/TI_out/payload
+yecho "将打包至：TI_out/payload，payload.bin & payload_properties.txt"
+for sf in $(ls $PROJECT_DIR/payload/*.img);do
+sf=$(basename $sf | sed 's/.img//g')
+partname="${partname}${sf}:"
+pimages="${pimages}$PROJECT_DIR/payload/${sf}.img:"
+yecho "预打包$sf.img"
+done
+inparts="--partition_names=${partname%?} --new_partitions=${pimages%?}"
+yecho "当前Super逻辑分区表：$superpart_list，可在<设置>中调整."
+echo "super_partition_groups=${super_group}" >> $PROJECT_DIR/payload/dynamic_partitions_info.txt
+echo "qti_dynamic_partitions_size=${supersize}" >> $PROJECT_DIR/payload/dynamic_partitions_info.txt
+echo "qti_dynamic_partitions_partition_list=${superpart_list}" >> $PROJECT_DIR/payload/dynamic_partitions_info.txt
+
+$ebinner/delta_generator --out_file=$PROJECT_DIR/TI_out/payload/payload.bin $inparts --dynamic_partition_info_file=$PROJECT_DIR/payload/dynamic_partitions_info.txt
+
+if ( $ebinner/delta_generator --in_file=$PROJECT_DIR/TI_out/payload/payload.bin --properties_file=$PROJECT_DIR/TI_out/payload/payload_properties.txt );then
+    ysuc "成功创建payload!"
+else
+    ywarn "创建payload失败！"
 fi
 sleep $sleeptime
 }
