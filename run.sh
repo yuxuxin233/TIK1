@@ -684,7 +684,7 @@ fi
 if [[ "$diysize" == "" ]] ;then
 yecho "压缩img中..."
 	if $EROFS_FLAG; then
-		LOGI "Erofs镜像，跳过e2fs压缩..."
+		echo "Erofs镜像，跳过压缩..."
 		EROFS_FLAG=false
 	else
 		resize2fs -f -M $out_img
