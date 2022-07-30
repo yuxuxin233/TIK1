@@ -147,9 +147,9 @@ else
 fi
 
 echo  
-echo -e "\033[31m    1> 项目     2> 解包\033[0m\n" 
-echo -e "\033[32m    3> 打包     4> 插件\033[0m\n" 
-echo -e "\033[32m    5> 封装\033[0m\n" 
+echo -e "\033[33m    1> 项目主页     2> 解包菜单\033[0m\n" 
+echo -e "\033[36m    3> 打包菜单     4> 插件菜单\033[0m\n" 
+echo -e "\033[32m    5> 一键封装\033[0m\n" 
 echo  
 read -p "    请输入编号: " op_menu
 case $op_menu in
@@ -692,7 +692,7 @@ yecho "压缩img中..."
 fi
 if [ "$pack_sparse" = "1" ] || [ "$isdat" = "1" ];then
 	img2simg $out_img $tempdir/${name}.s.img
-	mv -f $tempdir/${name}.s.img $tempdir/${name}.img
+	rm -rf $tempdir/${name}.img && mv -f $tempdir/${name}.s.img $tempdir/${name}.img
 fi
 
 if [ "$isbr" = "1" ];then
@@ -1176,7 +1176,7 @@ function getplug(){
 clear && cd $LOCALDIR  
 echo -e " >\033[33m 插件列表 \033[0m\n"
 plug=0
-for pls in $(curl -s https://gitee.com/yeliqin666/TIK_plug/raw/master/${platform})
+for pls in $(curl -s https://gitee.com/yeliqin666/TIK_plug/raw/master/x86_64)
 do 
 	plug=$((plug+1))
 	pls+="/raw/master/README.md"
@@ -1190,7 +1190,7 @@ do
 	echo -e "  ------------------------------------------------------------"
 done
 echo -e " \n"
-ywarn "模块构建中，并不保证稳定、安全、可用，请自行测试!"
+ywarn "模块构建中，以上仅用于展示，不保证稳定、安全、可用，请关注TIK群内插件更新!"
 read -p "   " ooooo
 subbed
 }
@@ -1325,11 +1325,11 @@ if [ -f "payload.bin" ]; then
 	for infile in $(ls $PROJECT_DIR/payload/*.img)
 	do
 		sf=$(basename $infile | sed 's/.img//g')
-		yecho "检测&解包$infile..."
 		getinfo $infile
 		if [[ $info = "Unknow" ]] || [[ $info = "dtbo" ]] || [[ $sf = "dsp" ]] || [[ $info = "vbmeta" ]];then
-			ywarn "不支持自动解包！"
+			ywarn "跳过解包$sf！"
 		else
+		    yecho "解包$sf...  "
 			mv $infile $PROJECT_DIR && infile=$PROJECT_DIR/$sf.img
 			imgextra
 			ysuc "成功." && rm -f $sf.img
@@ -1404,6 +1404,7 @@ if [ "$platform" = "aarch64" ];then
 fi
   # Cygwin Hack
   if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
+	echo -e "\033[33m $(cat $binner/banners/1) \033[0m"
 	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib,wget"
 	# AIK for cygwin extra packages
 	packages+=",file,lzop,xz,gzip,bzip2,libintl8,liblzo2_2"
@@ -1435,7 +1436,7 @@ fi
 
 packages="python3 simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
-	echo -e "\033[31m $(cat $binner/banners/1) \033[0m"
+	echo -e "\033[33m $(cat $binner/banners/1) \033[0m"
 	if [[ $(whoami) = "root" ]]; then
 		userid="root"
 	fi
