@@ -942,7 +942,7 @@ elif [ "$default_boot_tool" = "MBK" ];then
 	${su} mkdir $sf && cd $sf
 	sudo bash $MBK/unpackimg.sh $infile | tee $PROJECT_DIR/config/$sf.info
 	sudo cp -f $infile $PROJECT_DIR/config
-	echo "MBK" >> $PROJECT_DIR/config/${sf}_tool.txt
+	echo "MBK" > $PROJECT_DIR/config/${sf}_tool.txt
 	cd $PROJECT_DIR
 fi
 }
