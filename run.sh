@@ -456,6 +456,8 @@ if ls -d config/*.info >/dev/null 2>&1;then
 	if [ -f "$packs" ] ; then
 		partn=$((partn+1))
 		echo -e "   [$partn]- $sf <bootimg>\n"
+		toolo=$(cat config/${sf}_tool.txt)
+		eval "tool$partn=$toolo"
 		eval "part$partn=$sf" 
 		eval "type$partn=bootimg"
 	fi
@@ -519,6 +521,7 @@ if [[ "$filed" = "0" ]]; then
 	do
 		eval "partname=\$part$filed"
 		eval "imgtype=\$type$filed"
+		eval "boottool=\$tool$filed"
 		yecho "打包$partname..."
 		if [[ "$imgtype" == "bootimg" ]];then
 			bootpac $partname | tee $tiklog
@@ -560,6 +563,7 @@ elif [[ "$filed" = "55" ]]; then
 	do
 		eval "partname=\$part$filed"
 		eval "imgtype=\$type$filed"
+		eval "boottool=\$tool$filed"
 		if [ "$pacall" != "1" ];then
 			read -p "  是否打包$partname?[1/0]	" imgcheck </dev/tty
 		fi
@@ -589,6 +593,7 @@ elif [[ $filed =~ ^-?[1-9][0-9]*$ ]]; then
 	else
 		eval "partname=\$part$filed"
 		eval "imgtype=\$type$filed"
+		eval "boottool=\$tool$filed"
 		if [[ ! "$diyimgtype" == "1" ]] && [[ ! "$imgtype" == "bootimg" ]] && [[ ! "$imgtype" == "dtb" ]] && [[ ! "$imgtype" == "dtbo" ]];then
 		read -p "  输出文件格式[1]br [2]dat [3]img:" op_menu
 		case $op_menu in
@@ -630,7 +635,7 @@ fi
 packChoo
 }
 
-#
+#镜像打包
 inpacker(){
 source $binner/settings && cleantemp
 name=${1}
@@ -678,7 +683,7 @@ else
 		sed -i "/+found/d" $file_contexts
 		$ebinner/make_ext4fs -J -T $UTC -S $file_contexts -l $img_size -C $fs_config -L $name -a $name $out_img $in_files
 	else
-		mke2fs -O ^has_journal -L $name -I 256 -i 102400 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size
+		$ebinner/mke2fs -O ^has_journal -L $name -I 256 -i $inodesize -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size
 		${su} $ebinner/e2fsdroid -e -T $UTC $extrw -C $fs_config -S $file_contexts $rw -f $in_files -a $mount_path $out_img
 	fi
 fi
@@ -718,16 +723,22 @@ fi
 cleantemp
 }
 
-#boot打包—AIK
+#boot打包—AIK&MBK
 bootpac(){
-sf=${1}
-cp -afrv $PROJECT_DIR/$sf/* $AIK > /dev/null
-$AIK/repackimg.sh --forceelf
-if [ -e $AIK/unpadded-new.img ];then
-  mv $AIK/unpadded-new.img $PROJECT_DIR/exaid/
+if [ "$boottool" = "AIK" ];then
+	sf=${1}
+	cp -afrv $PROJECT_DIR/$sf/* $AIK > /dev/null
+	$AIK/repackimg.sh --forceelf | tee $tiklog
+	if [ -e $AIK/unpadded-new.img ];then
+		mv $AIK/unpadded-new.img $PROJECT_DIR/exaid/
+	fi
+	mv -f $AIK/image-new.img $PROJECT_DIR/TI_out/$sf.img
+	$AIK/cleanup.sh
+elif [ "$boottool" = "MBK" ];then
+	sf=${1}
+	sudo $MBK/repackimg.sh $PROJECT_DIR/config/$sf.img $PROJECT_DIR/$sf | tee $tiklog
+	mv -f $PROJECT_DIR/$sf/new-boot.img $PROJECT_DIR/TI_out/$sf.img
 fi
-mv -f $AIK/image-new.img $PROJECT_DIR/TI_out/$sf.img
-$AIK/cleanup.sh
 sleep $sleeptime
 }
 
@@ -920,14 +931,27 @@ elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
         fi
 	fi
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
-	${su} mkdir $sf
-	${su} $AIK/unpackimg.sh $infile $PROJECT_DIR >> $PROJECT_DIR/config/$sf.info
-	${su} mv $AIK/ramdisk $AIK/split_img $PROJECT_DIR/$sf
+	bootextra
     if [[ $userid = "root" ]]; then
         ${su} chmod 777 -R $sf
     fi
 else
 	ywarn "未知格式！请附带文件提交issue!"
+fi
+}
+
+function bootextra(){
+if [ "$default_boot_tool" = "AIK" ];then
+	${su} mkdir $sf
+	${su} $AIK/unpackimg.sh $infile $PROJECT_DIR | tee $PROJECT_DIR/config/$sf.info
+	echo "AIK" >> $PROJECT_DIR/config/${sf}_tool.txt
+	${su} mv $AIK/ramdisk $AIK/split_img $PROJECT_DIR/$sf
+elif [ "$default_boot_tool" = "MBK" ];then
+	${su} mkdir $sf && cd $sf
+	sudo bash $MBK/unpackimg.sh $infile | tee $PROJECT_DIR/config/$sf.info
+	sudo cp -f $infile $PROJECT_DIR/config
+	echo "MBK" >> $PROJECT_DIR/config/${sf}_tool.txt
+	cd $PROJECT_DIR
 fi
 }
 

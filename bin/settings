@@ -44,12 +44,13 @@ echo -e "   7>[EXT4]InodeSize\n"
 echo -e "   8>[Img]创建sparse\n"
 echo -e "   9>[~4]Img文件系统\n"
 echo -e "   10> 补全fs_config\n"
-echo -e "   11>返回上一级菜单"
+echo -e "   11>默认BOOT打包Tool\n"
+echo -e "   12>返回上一级菜单"
 echo -e "   --------------------------"
 read -p "   请输入编号: " op_pro
-elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 10 ]; then
+if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 11 ]; then
 	packset${op_pro}
-elif [ "$op_pro" == "11" ]; then
+elif [ "$op_pro" == "12" ]; then
 	settings
 else
 	ywarn  "Input error!"
@@ -278,6 +279,18 @@ case $pack_op in
 esac
 }
 
+function packset11()
+{
+read -p "  默认Boot解、打包工具[1]AndroidImageKitchen [2]MagiskBootKitchen: " chboottool
+case $chboottool in
+    1)
+	sed -i 's/^default_boot_tool=.*/default_boot_tool='AIK'/'  $binner/settings
+    ;;
+    *)
+	sed -i 's/^default_boot_tool=.*/default_boot_tool='MBK'/'  $binner/settings
+esac
+}
+
 function dyset1()
 {
 echo "  当前动态分区簇名/GROUPNAME：$super_group"
@@ -384,6 +397,7 @@ auto_fsconfig=1
 metadatasize=65536
 inodesize=102400
 super_group=qti_dynamic_partitions
+default_boot_tool=MBK
 superpart_list="system odm vendor system_ext product"
 erofslim=
 extrw=

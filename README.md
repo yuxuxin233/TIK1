@@ -103,7 +103,8 @@ Credit:
 26. D.N.A. & CYToolkit for reference on UI [@sharpeter](https://gitee.com/sharpeter/DNA) [@NightstarSakura](https://github.com/NightstarSakura)
 27. gettype [aarch64&cygwin64&x86_64 from affggh @ Github](https://github.com/affggh/gettype)
 28. lpmake & lpunpack [cygwin64 from @affggh](https://github.com/affggh/lpunpack_and_lpmake)
-29. debuging & suggestions &PR [the active users!]
+29. Android Image Kitchen (modified): [osm0sis @ XDA](https://forum.xda-developers.com/t/tool-android-image-kitchen-unpack-repack-kernel-ramdisk-win-android-linux-mac.2073775/)
+30. debuging & suggestions &PR [the active users!]
 
 
 ####  **参与维护途径**
