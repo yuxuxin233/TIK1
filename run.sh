@@ -5,8 +5,13 @@ source $binner/settings
 tempdir=$LOCALDIR/TEMP
 tiklog=$LOCALDIR/TIK3_`date "+%y%m%d"`.log
 AIK="$binner/AIK"
+MBK="$binner/AIK"
 platform=$(uname -m)
 ostype=$(uname -o)
+export LD_LIBRARY_PATH=$ebinner/lib64
+PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
+mkdtimg_tool="$binner/mkdtboimg.py"
+dtc="$ebinner/dtc"
 # Add for cygwin by affggh
 if [ "$ostype" = "Cygwin" ]; then
   source $binner/log.sh
@@ -25,10 +30,6 @@ if [ "$ostype" = "Cygwin" ]; then
 else
   ebinner="$binner/Linux/$platform"
 fi
-export LD_LIBRARY_PATH=$ebinner/lib64
-PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
-mkdtimg_tool="$binner/mkdtboimg.py"
-dtc="$ebinner/dtc"
 yecho(){ echo -e "\033[36m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 rmdire(){ if [ -d "$1" ];then sudo rm -rf $1 ;fi ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
@@ -993,7 +994,7 @@ if [[ $userid = "root" ]]; then
 	${su} chmod -R 777 $Imgdir
 fi
 find $Imgdir -name "*" -type f -size 0c | xargs -n 1 rm -f
-superpa="--metadata-size 65536 --super-name super "
+superpa="--metadata-size $metadatasize --super-name $supername "
 if [ "$ifsparse" = "1" ];then
 	superpa+="--sparse "
 fi
@@ -1001,7 +1002,7 @@ fi
 if [ "$supertype" = "VAB" ];then
 	superpa+="--virtual-ab "
 fi
-superpa+="-block-size=$BLOCKSIZE "
+superpa+="-block-size=$SBLOCKSIZE "
 superpa+="--metadata-slots $slotnumber "
 superpa+="--device super:$supersize "
 for imag in $(ls $Imgdir/*.img);do
@@ -1028,6 +1029,7 @@ done
 
 superpa+=" --group main:$group_size "
 superpa+="-F --output $outputimg"
+echo $superpa
 if ( $ebinner/lpmake $superpa | tee $tiklog );then
     ysuc "成功创建super.img!"
 else
@@ -1069,20 +1071,18 @@ clear && cd $Sourcedir &&zipn=0
 echo -e " \033[31m >ROM列表 \033[0m\n"
 ywarn "   请将ROM置于$Sourcedir下！"
 if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
-	cd $Sourcedir
-	for zip0 in $(ls *.zip)
+	for zip0 in $(ls $Sourcedir/*.zip)
 	do 
 	if [ -f "$zip0" ]; then
 		getsize $zip0 >/dev/null 2>&1
 		if [ "$filesize" -gt "$plugromlit" ];then
-		zip=$(echo "$zip0" )
-		zipn=$((zipn+1))
-		echo -e "   [$zipn]- $zip\n"
-		eval "zip$zipn=$zip" 
+			zip=$(basename "$zip0" )
+			zipn=$((zipn+1))
+			echo -e "   [$zipn]- $zip\n"
+			eval "zip$zipn=$zip0" 
 		fi
 	fi
 	done
-	cd $LOCALDIR
 else
 	ywarn "	没有ROM文件！"
 fi
@@ -1093,7 +1093,7 @@ eval "tzip=\$zip$zipd"
 if [[ "$tzip" == "" ]];then
 	ywarn "Input error!" && sleep $sleeptime && promenu
 else
-	zs=$(echo "$tzip" | sed 's/.zip//g')
+	zs=$(basename "$tzip" | sed 's/.zip//g')
 	read -p "请输入项目名称(可留空)：" projec
 	if test -z "$projec";then
 		project=TI_$zs
@@ -1107,7 +1107,7 @@ else
 	PROJECT_DIR=$LOCALDIR/$project && mkdir $PROJECT_DIR
 	echo 创建项目:$project 成功！
 	yecho "解压刷机包中..."
-	7z x "$Sourcedir/$tzip" -o"$LOCALDIR/$project/" > /dev/null
+	7z x "$tzip" -o"$LOCALDIR/$project/" > /dev/null
 	sleep $sleeptime
 	autounpack
 	sleep $sleeptime
@@ -1204,15 +1204,17 @@ zipn=0
 ywarn "   请将插件置于$Sourcedir下！"
 if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
 	cd $Sourcedir
-	for zip0 in $(ls *.zip)
+	for zip0 in $(ls $Sourcedir/*.zip)
 	do 
+	if [ -f "$zip0" ]; then
 		getsize $zip0 >/dev/null 2>&1
-		if [ $filesize -lt $plugromlit ];then
-		zip=$(echo "$zip0" )
-		zipn=$((zipn+1))
-		echo -e "   [$zipn]- $zip\n"
-		eval "zip$zipn=$zip" 
+		if [ "$filesize" -lt "$plugromlit" ];then
+			zip=$(basename "$zip0" )
+			zipn=$((zipn+1))
+			echo -e "   [$zipn]- $zip\n"
+			eval "zip$zipn=$zip0" 
 		fi
+	fi
 	done
 cd $LOCALDIR
 else
@@ -1225,13 +1227,13 @@ eval "tzip=\$zip$zipd"
 if [[ "$tzip" == "" ]];then
 	ywarn "Input error!" && sleep $sleeptime
 else
-	zs=$(echo "$tzip" | rev | cut -d'.' -f1 --complement | rev)
+	zs=$(basename "$tzip" | rev | cut -d'.' -f1 --complement | rev)
 	if [[ -d $binner/subs/$zs ]]; then
 		${su} rm -fr $binner/subs/$zs
 	fi
 	mkdir $binner/subs/$zs
 	yecho "安装插件[$zs]中..."
-	7z x "$Sourcedir/$tzip" -o"$binner/subs/$zs" > /dev/null
+	7z x "$tzip" -o"$binner/subs/$zs" > /dev/null
 	sudo chmod -R 777 $binner/subs/$zs
 	ysuc "安装完成"
 	sleep $sleeptime
@@ -1416,12 +1418,6 @@ fi
 	# wait until install done
 	while(ps -W | grep "setup-x86_64.exe">/dev/null);do sleep 3; done
 
-    # Install open-jdk-18 for windows  jdk-18.0.1.1
-	#LOGI "安装openjdk 18.0.1.1"
-	#jdk_url='https://download.java.net/java/GA/jdk18.0.1.1/65ae32619e2f40f3a9af3af1851d6e19/2/GPL/openjdk-18.0.1.1_windows-x64_bin.zip'
-	#aria2c "$jdk_url" -o jdk.zip
-	#7za x "jdk.zip" -o"$binner/Cygwin"
-
     LOGI "安装python依赖"
     python3 -m pip install --upgrade pip -i $PIP_MIRROR
     pip3 install extract-dtb pycryptodome docopt requests beautifulsoup4 -i $PIP_MIRROR
@@ -1434,7 +1430,7 @@ fi
     userid="$USERNAME"
   fi
 
-packages="python3 simg2img img2simg sed python3-pip brotli resize2fs curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
+packages="python3 simg2img img2simg sed python3-pip brotli curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
 	echo -e "\033[33m $(cat $binner/banners/1) \033[0m"
 	if [[ $(whoami) = "root" ]]; then
@@ -1457,7 +1453,7 @@ if [[ ! -f "$binner/depment" ]]; then
     sudo sed -i 's/security.ubuntu.com/mirrors.bfsu.edu.cn/g' /etc/apt/sources.list
 	sudo chmod 0777 /etc/apt/sources.list
     yecho "正在更新软件列表..."
-    ${su} apt-get update  -y && ${su} apt-get upgrade -y 
+    sudo apt-get update  -y && sudo apt-get upgrade -y 
     yecho "正在安装必备软件包..."
     for i in $packages; do
         yecho "安装$i..."

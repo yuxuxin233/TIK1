@@ -66,22 +66,23 @@ echo -e "   1> dynamic_partitions簇名\n"
 echo -e "   2> [Metadata]元数据插槽数\n"
 echo -e "   3> [Metadata]最大保留Size\n"
 echo -e "   4> [分区] 默认扇区/块大小\n"
-echo -e "   5> [Super] 指定/block分区\n"
-echo -e "   6> [Super] 启用最佳的对齐\n"
-echo -e "   7> [Super] 调整对齐偏移量\n"
-echo -e "   8> [Super] 更改物理分区名\n"
-echo -e "   9> [Super] 更改逻辑分区表\n"
-echo -e "   10>[Super]强制烧写完整Img\n"
-echo -e "   11>[Super] 标记Slot分区名\n"
-echo -e "   12>[Payload]V.Boot_header\n"
-echo -e "   13>返回上一级菜单"
+echo -e "   5> [Super] 指定/block大小\n"
+echo -e "   6> [Super] 更改物理分区名\n"
+echo -e "   7> [Super] 更改逻辑分区表\n"
+echo -e "   8> [Super]强制烧写完整Img\n"
+echo -e "   9> [Super] 标记分区槽后缀\n"
+echo -e "   10>[Payload]靶定HeaderVer\n"
+echo -e "   11>[Super] 启用最佳的对齐\n"
+echo -e "   12>返回上一级菜单"
 echo -e "   --------------------------"
 read -p "   请输入编号: " op_pro
-if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 11 ]; then
+if [ "$op_pro" == "12" ]; then
+	settings
+elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -ge 10 ]; then
 	#dyset$op_pro
 	echo "  维护中..." && sleep $sleeptime
-elif [ "$op_pro" == "13" ]; then
-	settings
+elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 9 ]; then
+	dyset$op_pro
 else
 	ywarn  "Input error!"
 	sleep $sleeptime
@@ -278,7 +279,57 @@ sed -i 's/^super_group=.*/super_group='$super_group'/'  $binner/settings
 fi
 }
 
-function dyset9()
+function dyset2()
+{
+read -p "  Metadata插槽数：[1] [2] [3]: " slotnumber
+case $slotnumber in
+    1)
+	sed -i 's/^slotnumber=.*/slotnumber='1'/'  $binner/settings
+    ;;
+    3)
+	sed -i 's/^slotnumber=.*/slotnumber='3'/'  $binner/settings
+    ;;
+    *)
+	sed -i 's/slotnumber=.*/slotnumber='2'/'  $binner/settings
+esac
+}
+
+function dyset3()
+{
+read -p "  设置metadata最大保留size(默认为65536，至少512) " metadatasize
+if [[ ! "$metadatasize" == "" ]] ;then
+	sed -i 's/^metadatasize=.*/metadatasize='$metadatasize'/'  $binner/settings
+fi
+}
+
+function dyset4()
+{
+echo "  分区打包扇区/块大小：$BLOCKSIZE"
+read -p "  请输入: " BLOCKSIZE
+if [[ ! "$BLOCKSIZE" == "" ]]; then
+sed -i 's/^BLOCKSIZE=.*/BLOCKSIZE='$BLOCKSIZE'/'  $binner/settings
+fi
+}
+
+function dyset5()
+{
+echo "  分区打包扇区/块大小：$SBLOCKSIZE"
+read -p "  请输入: " SBLOCKSIZE
+if [[ ! "$SBLOCKSIZE" == "" ]]; then
+sed -i 's/^SBLOCKSIZE=.*/SBLOCKSIZE='$SBLOCKSIZE'/'  $binner/settings
+fi
+}
+
+function dyset6()
+{
+echo "  当前动态分区物理分区名(默认super)：$supername"
+read -p "  请输入（无特殊字符）: " supername
+if [[ ! "$supername" == "" ]]; then
+sed -i 's/^supername=.*/supername='$supername'/'  $binner/settings
+fi
+}
+
+function dyset7()
 {
 echo "  当前动态分区内逻辑分区表：$superpart_list"
 read -p "  请输入（空格隔开）: " superpart_list
@@ -287,27 +338,45 @@ sed -i 's/^superpart_list=".*/superpart_list="'$superpart_list'"/'  $binner/sett
 fi
 }
 
-function dyset5()
+function dyset8()
 {
-echo "  分区打包扇区/块大小：$BLOCKSIZE"
-read -p "  请输入: " BLOCKSIZE
-if [[ ! "$BLOCKSIZE" == "" ]]; then
-sed -i 's/^BLOCKSIZE=.*/BLOCKSIZE='$BLOCKSIZE'/'  $binner/settings
+read -p "  是否创建强制刷入的Full镜像？[1/0]" iffullsuper
+if [[ ! "$iffullsuper" == "1" ]] ;then
+	sed -i 's/^fullsuper=.*/fullsuper=''/'  $binner/settings
+else
+	sed -i 's/^fullsuper=.*/fullsuper='-F'/'  $binner/settings
 fi
 }
+
+function dyset9()
+{
+read -p "  是否标记需要Slot后缀的分区？[1/0]" autoslotsuffix
+if [[ ! "$autoslotsuffix" == "1" ]] ;then
+	sed -i 's/^autoslotsuffixing=.*/autoslotsuffixing=''/'  $binner/settings
+else
+	sed -i 's/^autoslotsuffixing=.*/autoslotsuffixing='-x'/'  $binner/settings
+fi
+}
+
 #Settings
 sleeptime=1
 brcom=5
 configcompl=1
 mydir=TIK
 Romer=yeliqin666
+supername=super
 banner=1
 pack_e2=1
 slotnumber=2
 plugromlit=125829120
 pack_sparse=0
+autoslotsuffixing=
+fullsuper=
+superoffset="--alignment-offset="
 BLOCKSIZE=4096
+SBLOCKSIZE=4096
 auto_fsconfig=1
+metadatasize=65536
 erofslim=
 extrw=
 utcstamp=
