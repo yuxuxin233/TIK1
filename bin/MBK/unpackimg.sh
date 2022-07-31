@@ -12,7 +12,7 @@ LOCALDIR=`pwd`
 BINPATH="$(realpath $(dirname $0)/bin/$(ostype)/$(osarch))"
 PATH="${BINPATH}:${PATH}"
 
-cpio="$(realpath ${BINPATH})/cpio"
+cpio="cpio"
 alias ifvndrboot="$(realpath ${BINPATH})/ifvndrboot"
 alias format="$(realpath ${BINPATH})/format"
 
