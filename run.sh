@@ -10,8 +10,6 @@ platform=$(uname -m)
 ostype=$(uname -o)
 export LD_LIBRARY_PATH=$ebinner/lib64
 PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
-mkdtimg_tool="$binner/mkdtboimg.py"
-dtc="$ebinner/dtc"
 # Add for cygwin by affggh
 if [ "$ostype" = "Cygwin" ]; then
   source $binner/log.sh
@@ -30,6 +28,8 @@ if [ "$ostype" = "Cygwin" ]; then
 else
   ebinner="$binner/Linux/$platform"
 fi
+mkdtimg_tool="$binner/mkdtboimg.py"
+dtc="$ebinner/dtc"
 yecho(){ echo -e "\033[36m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 rmdire(){ if [ -d "$1" ];then sudo rm -rf $1 ;fi ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
