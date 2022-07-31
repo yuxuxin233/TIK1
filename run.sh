@@ -5,7 +5,7 @@ source $binner/settings
 tempdir=$LOCALDIR/TEMP
 tiklog=$LOCALDIR/TIK3_`date "+%y%m%d"`.log
 AIK="$binner/AIK"
-MBK="$binner/AIK"
+MBK="$binner/MBK"
 platform=$(uname -m)
 ostype=$(uname -o)
 export LD_LIBRARY_PATH=$ebinner/lib64
@@ -988,7 +988,6 @@ if [ "$ostype" = "Cygwin" ]; then
 	Imgdir=`cygpath -w "$Imgdir"`
 	outputimg=`cygpath -w "$outputimg"`
 fi
-
 group_size=0
 if [[ $userid = "root" ]]; then
 	${su} chmod -R 777 $Imgdir
@@ -1003,7 +1002,6 @@ if [ "$supertype" = "VAB" ];then
 	superpa+="--virtual-ab "
 fi
 superpa+="-block-size=$SBLOCKSIZE "
-superpa+="--metadata-slots $slotnumber "
 superpa+="--device super:$supersize "
 for imag in $(ls $Imgdir/*.img);do
 	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev  | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
@@ -1012,6 +1010,7 @@ for imag in $(ls $Imgdir/*.img);do
 			if [[ -f $Imgdir/${image}_a.img ]] && [[ -f $Imgdir/${image}_b.img ]];then
 				img_sizea=$(wc -c <$Imgdir/${image}_a.img) && img_sizeb=$(wc -c <$Imgdir/${image}_b.img)
 			group_size=`expr ${img_sizea} + ${img_sizeb} + ${group_size}`
+				superpa+="--metadata-slots 3 "
 				superpa+="--partition "$image"_a:readonly:$img_sizea:main --image "$image"_a=$Imgdir/${image}_a.img --partition "$image"_b:readonly:$img_sizeb:main --image "$image"_b=$Imgdir/${image}_b.img "
 			else
 				mv $imag $Imgdir/$image.img > /dev/null 2>&1
@@ -1020,6 +1019,7 @@ for imag in $(ls $Imgdir/*.img);do
 				superpa+="--partition "$image"_a:readonly:$img_size:main --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:main "
 			fi
 		else
+			superpa+="--metadata-slots 2 "
 			img_size=$(wc -c <$Imgdir/$image.img)
 			superpa+="--partition "$image":readonly:$img_size:main --image "$image"=$Imgdir/$image.img "
 			group_size=`expr ${img_size} + ${group_size}`
@@ -1028,8 +1028,7 @@ for imag in $(ls $Imgdir/*.img);do
 done
 
 superpa+=" --group main:$group_size "
-superpa+="-F --output $outputimg"
-echo $superpa
+superpa+="$fullsuper $autoslotsuffixing --output $outputimg"
 if ( $ebinner/lpmake $superpa | tee $tiklog );then
     ysuc "成功创建super.img!"
 else

@@ -281,11 +281,8 @@ fi
 
 function dyset2()
 {
-read -p "  Metadata插槽数：[1] [2] [3]: " slotnumber
+read -p "  强制Metadata插槽数：[2] [3]: " slotnumber
 case $slotnumber in
-    1)
-	sed -i 's/^slotnumber=.*/slotnumber='1'/'  $binner/settings
-    ;;
     3)
 	sed -i 's/^slotnumber=.*/slotnumber='3'/'  $binner/settings
     ;;
@@ -359,28 +356,28 @@ fi
 }
 
 #Settings
-sleeptime=1
-brcom=5
-configcompl=1
 mydir=TIK
 Romer=yeliqin666
 supername=super
+sleeptime=1
+brcom=5
+configcompl=1
 banner=1
 pack_e2=1
 slotnumber=2
 plugromlit=125829120
 pack_sparse=0
 autoslotsuffixing=
-fullsuper=
+fullsuper=-F
 superoffset="--alignment-offset="
 BLOCKSIZE=4096
 SBLOCKSIZE=4096
 auto_fsconfig=1
 metadatasize=65536
+super_group=qti_dynamic_partitions
+superpart_list="system odm vendor system_ext product"
 erofslim=
 extrw=
 utcstamp=
 diysize=
 diyimgtype=
-super_group=qti_dynamic_partitions
-superpart_list="system odm vendor system_ext product"
