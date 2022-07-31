@@ -121,10 +121,12 @@ fi
 
 # 主菜单
 function menu(){
-PROJECT_DIR=$LOCALDIR/$project
+PROJECT_DIR0=$LOCALDIR/$project
 # Fix cygwin path issue
 if [ "$ostype" = "Cygwin" ]; then
-	PROJECT_DIR=`cygpath -w "$PROJECT_DIR"`
+	PROJECT_DIR=`cygpath -w "$PROJECT_DIR0"`
+else
+	PROJECT_DIR=$PROJECT_DIR0
 fi
 clear && cd $PROJECT_DIR
 
@@ -139,9 +141,19 @@ echo -e "\n"
 echo -e " \033[31m>ROM菜单 \033[0m\n"
 echo -e "  项目：$project"
 if [[ -f $PROJECT_DIR/system/system/build.prop ]]; then
-	SYSTEM_DIR="$PROJECT_DIR/system/system"
+	SYSTEM_DIR0="$PROJECT_DIR0/system/system"
+if [ "$ostype" = "Cygwin" ]; then
+	SYSTEM_DIR=`cygpath -w "$SYSTEM_DIR0"`
+else
+	SYSTEM_DIR=$SYSTEM_DIR0
+fi
 elif [[ -f $PROJECT_DIR/system/build.prop ]]; then
-	SYSTEM_DIR="$PROJECT_DIR/system"
+	SYSTEM_DIR0="$PROJECT_DIR0/system"
+if [ "$ostype" = "Cygwin" ]; then
+	SYSTEM_DIR=`cygpath -w "$SYSTEM_DIR0"`
+else
+	SYSTEM_DIR=$SYSTEM_DIR0
+fi
 else
 	SYSTEM_DIR=0
 	ywarn "  非完整ROM项目"
@@ -861,17 +873,20 @@ elif [ "$info" = "ops" ];then
 	python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf | tee $tiklog
 elif [ "$info" = "payload" ];then
 	yecho "$sf所含分区列表："
+if [ "$ostype" = "Cygwin" ]; then
+	infile=`cygpath -w "$PROJECT_DIR/payload.bin"` && payloadout=`cygpath -w "$PROJECT_DIR/payload"`
+fi
 	$ebinner/payload-dumper-go -l $infile
 	read -p "请输入需要解压的分区名(空格隔开)/all[全部]	" extp </dev/tty
 	if [ "$extp" = "all" ];then 
-		$ebinner/payload-dumper-go $infile -o $PROJECT_DIR/payload | tee $tiklog
+		$ebinner/payload-dumper-go $infile -o $payloadout
 	else
 		if [[ ! -d "payload" ]]; then
 			mkdir $PROJECT_DIR/payload
 		fi
 		for d in $extp
 		do
-			$ebinner/payload-dumper-go -p $d $infile -o $PROJECT_DIR/payload | tee $tiklog
+			$ebinner/payload-dumper-go -p $d $infile -o $payloadout
 		done
 	fi
 elif [ "$info" = "win000" ];then
@@ -1331,7 +1346,10 @@ yecho "自动解包开始！"
 #VAB自动解包
 if [ -f "payload.bin" ]; then
 	yecho "解包 payload.bin..."
-	$ebinner/payload-dumper-go $PROJECT_DIR/payload.bin -o $PROJECT_DIR/payload
+if [ "$ostype" = "Cygwin" ]; then
+	payloadfile=`cygpath -w "$PROJECT_DIR/payload.bin"` && payloadout=`cygpath -w "$PROJECT_DIR/payload"`
+fi
+	$ebinner/payload-dumper-go $payloadfile -o $payloadout
 	yecho "payload.bin解包完成！"
 	rm -rf payload.bin && rm -rf care_map.pb && rm -rf apex_info.pb&& rm -rf payload_properties.txt
 	for infile in $(ls $PROJECT_DIR/payload/*.img)
