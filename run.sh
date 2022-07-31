@@ -676,7 +676,6 @@ if [ $ostype = 'Cygwin' ]; then
 	in_files=`cygpath -w "$in_files"`
 fi
 if [[ "$imgtype" == "erofs" ]];then
-	EROFS_FLAG=true
 	${su} $ebinner/mkfs.erofs $erofslim --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files
 else
 	if [ "$pack_e2" = "0" ];then
@@ -689,12 +688,11 @@ else
 fi
 if [[ "$diysize" == "" ]] ;then
 yecho "压缩img中..."
-	if $EROFS_FLAG; then
-		echo "Erofs镜像，跳过压缩..."
-		EROFS_FLAG=false
-	else
-		resize2fs -f -M $out_img
-	fi
+if [[ "$imgtype" == "erofs" ]];then
+	echo "Erofs镜像，跳过压缩..."
+else
+	resize2fs -f -M $out_img
+fi
 fi
 if [ "$pack_sparse" = "1" ] || [ "$isdat" = "1" ];then
 	img2simg $out_img $tempdir/${name}.s.img
@@ -896,12 +894,6 @@ cleantemp
 
 #Img解包
 function imgextra(){
-# Fix cygwin path issue
-if [ "$ostype" = "Cygwin" ]; then
-	infile=`cygpath -w "$infile"`
-	PROJECT_DIR=`cygpath -w "$PROJECT_DIR"`
-fi
-
 if [ "$info" = "ext" ]; then
 	sudo python3 $binner/imgextractor.py $infile $PROJECT_DIR | tee $tiklog
 	echo "ext4" >>$PROJECT_DIR/config/${sf}_type.txt
@@ -1007,11 +999,6 @@ packmenu
 function insuper(){
 Imgdir=$1
 outputimg=$2
-# Fix cygwin path issue
-if [ "$ostype" = "Cygwin" ]; then
-	Imgdir=`cygpath -w "$Imgdir"`
-	outputimg=`cygpath -w "$outputimg"`
-fi
 group_size=0
 if [[ $userid = "root" ]]; then
 	${su} chmod -R 777 $Imgdir
@@ -1031,10 +1018,10 @@ for imag in $(ls $Imgdir/*.img);do
 	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev  | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
 	if ! echo $superpa | grep "partition "$image":readonly" > /dev/null && ! echo $superpa | grep "partition "$image"_a:readonly" > /dev/null  ;then
 		if [ "$supertype" = "VAB" ] || [ "$supertype" = "AB" ];then
+            superpa+="--metadata-slots 3 "
 			if [[ -f $Imgdir/${image}_a.img ]] && [[ -f $Imgdir/${image}_b.img ]];then
 				img_sizea=$(wc -c <$Imgdir/${image}_a.img) && img_sizeb=$(wc -c <$Imgdir/${image}_b.img)
 			group_size=`expr ${img_sizea} + ${img_sizeb} + ${group_size}`
-				superpa+="--metadata-slots 3 "
 				superpa+="--partition "$image"_a:readonly:$img_sizea:main --image "$image"_a=$Imgdir/${image}_a.img --partition "$image"_b:readonly:$img_sizeb:main --image "$image"_b=$Imgdir/${image}_b.img "
 			else
 				mv $imag $Imgdir/$image.img > /dev/null 2>&1
@@ -1453,7 +1440,7 @@ fi
     userid="$USERNAME"
   fi
 
-packages="python3 simg2img img2simg sed python3-pip brotli curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
+packages="python3 simg2img img2simg cpio sed python3-pip brotli curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
 	echo -e "\033[33m $(cat $binner/banners/1) \033[0m"
 	if [[ $(whoami) = "root" ]]; then
