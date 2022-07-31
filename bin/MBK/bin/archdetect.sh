@@ -1,8 +1,8 @@
 #!/usr/bin/sh
 
 ostype() {
-  if [ "$OS" = "Windows_NT" ]; then
-    OSTYPE="Win"
+  if [ "$(uname -o)" = "Cygwin" ]; then
+    OSTYPE="Cygwin"
   else
     OSTYPE="Linux"
   fi

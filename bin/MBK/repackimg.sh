@@ -13,12 +13,17 @@ BINPATH="$(realpath $(dirname $0)/bin/$(ostype)/$(osarch))"
 PATH="${BINPATH}:${PATH}"
 
 cpio="$(realpath ${BINPATH})/cpio"
+if [ "$(ostype)" = "Cygwin" ]; then
+  # Use internal cpio command
+  cpio="cpio"
+fi
+
 alias ifvndrboot="$(realpath ${BINPATH})/ifvndrboot"
 alias format="$(realpath ${BINPATH})/format"
 
-if [ "$OS" = "Windows_NT" ]; then
+if [ "$(uname -o)" = "Cygwin" ]; then
   alias sudo=""
-  alias find="$(realpath ${BINPATH})/find"
+  alias find="find"
 # on Android device the Var "$OSTYPE"=""
 elif [ "$OSTYPE" = "" ]; then
   if [ ! "$(whoami)" = "root" ]; then

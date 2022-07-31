@@ -16,7 +16,7 @@ cpio="cpio"
 alias ifvndrboot="$(realpath ${BINPATH})/ifvndrboot"
 alias format="$(realpath ${BINPATH})/format"
 
-if [ "$OS" = "Windows_NT" ]; then
+if [ "$(uname -o)" = "Cygwin" ]; then
   alias sudo=""
 # on Android device the Var "$OSTYPE"=""
 elif [ "$OSTYPE" = "" ]; then
