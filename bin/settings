@@ -40,15 +40,16 @@ echo -e "   3>[EXT4] 打包工具\n"
 echo -e "   4>[EXT4]打包RO/RW\n"
 echo -e "   5>[Erofs]压缩方式\n"
 echo -e "   6>[EXT4]UTC时间戳\n"
-echo -e "   7>[Img]创建sparse\n"
-echo -e "   8>[~4]Img文件系统\n"
-echo -e "   9> 补全fs_config\n"
-echo -e "   10>返回上一级菜单"
+echo -e "   7>[EXT4]InodeSize\n"
+echo -e "   8>[Img]创建sparse\n"
+echo -e "   9>[~4]Img文件系统\n"
+echo -e "   10> 补全fs_config\n"
+echo -e "   11>返回上一级菜单"
 echo -e "   --------------------------"
 read -p "   请输入编号: " op_pro
-if [[ $op_pro =~ ^[1-9]$ ]]; then
+elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -le 10 ]; then
 	packset${op_pro}
-elif [ "$op_pro" == "10" ]; then
+elif [ "$op_pro" == "11" ]; then
 	settings
 else
 	ywarn  "Input error!"
@@ -72,11 +73,10 @@ echo -e "   7> [Super] 更改逻辑分区表\n"
 echo -e "   8> [Super]强制烧写完整Img\n"
 echo -e "   9> [Super] 标记分区槽后缀\n"
 echo -e "   10>[Payload]靶定HeaderVer\n"
-echo -e "   11>[Super] 启用最佳的对齐\n"
-echo -e "   12>返回上一级菜单"
+echo -e "   11>返回上一级菜单"
 echo -e "   --------------------------"
 read -p "   请输入编号: " op_pro
-if [ "$op_pro" == "12" ]; then
+if [ "$op_pro" == "11" ]; then
 	settings
 elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]] && [ $op_pro -ge 10 ]; then
 	#dyset$op_pro
@@ -232,6 +232,14 @@ fi
 
 function packset7()
 {
+read -p "  设置EXT分区inode-size: " inodesize
+if [[ ! "$inodesize" == "" ]] ;then
+	sed -i 's/^inodesize=.*/inodesize='$inodesize'/'  $binner/settings
+fi
+}
+
+function packset8()
+{
 echo "  Img是否打包为sparse(压缩体积)[1/0]"
 read -p "  请输入序号: " ifpsparse
 case $ifpsparse in
@@ -245,7 +253,7 @@ case $ifpsparse in
 esac
 }
 
-function packset8()
+function packset9()
 {
 read -p "  打包镜像格式[1]同解包格式 [2]可选择: " typediy
 case $typediy in
@@ -257,7 +265,7 @@ case $typediy in
 esac
 }
 
-function packset9()
+function packset10()
 {
 echo "  是否自动补全fs_config[谨慎!]: [1]是 [2]否 "
 read -p "  请输入序号: " pack_op
@@ -374,6 +382,7 @@ BLOCKSIZE=4096
 SBLOCKSIZE=4096
 auto_fsconfig=1
 metadatasize=65536
+inodesize=102400
 super_group=qti_dynamic_partitions
 superpart_list="system odm vendor system_ext product"
 erofslim=
