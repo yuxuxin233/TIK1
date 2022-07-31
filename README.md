@@ -37,18 +37,18 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试！
 
 ####  **安装教程** 
 
-    git clone https://gitee.com/yeliqin666/TIK
-    cd TIK3 && bash TIK3.sh
+    git clone https://gitee.com/yeliqin666/TIK TIK3
+    cd TIK3 && bash run.sh
 	
-####  **【手机端--需配置proot环境】** 
+####  **【手机端】** 
 
-1----手机运行Termux 获取存储权限 
+1----运行Termux 获取存储权限 
 
-        termux-setup-storage
+    termux-setup-storage
 
-2----手机一键配置proot并下载工具
+2----一键配置proot并下载工具
 
-        bash <(curl -s https://gitee.com/yeliqin666/proot-ubuntu/raw/master/onekey_install.sh)
+    bash <(curl -s https://gitee.com/yeliqin666/proot-ubuntu/raw/master/onekey_install.sh)
 
 
 ####  **使用说明** 
