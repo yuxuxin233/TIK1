@@ -1028,7 +1028,6 @@ if [ "$supertype" = "VAB" ];then
 	superpa+="--virtual-ab "
 fi
 superpa+="-block-size=$SBLOCKSIZE "
-superpa+="--device super:$supersize "
 for imag in $(ls $Imgdir/*.img);do
 	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev  | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
 	if ! echo $superpa | grep "partition "$image":readonly" > /dev/null && ! echo $superpa | grep "partition "$image"_a:readonly" > /dev/null  ;then
@@ -1053,7 +1052,13 @@ for imag in $(ls $Imgdir/*.img);do
 	fi
 done
 
-superpa+=" --group main:$group_size "
+superpa+="--device super:$supersize "
+if [ "$supertype" = "VAB" ] || [ "$supertype" = "AB" ];then
+    superpa+=" --group ${super_group}_a:$supersize "
+    superpa+=" --group ${super_group}_b:$supersize "
+else
+    superpa+=" --group ${super_group}:$supersize "
+fi
 superpa+="$fullsuper $autoslotsuffixing --output $outputimg"
 if ( $ebinner/lpmake $superpa | tee $tiklog );then
     ysuc "成功创建super.img!"
