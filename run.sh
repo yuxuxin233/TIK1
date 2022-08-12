@@ -270,6 +270,8 @@ echo -e "\033[33m [Img]文件\033[0m\n"
 			echo -e "   [$filen]- $img0 <EXT4>\n"
 		elif [ "$info" == "erofs" ]; then
 			echo -e "   [$filen]- $img0 <EROFS>\n"
+		elif [ "$info" == "sparse" ]; then
+			echo -e "   [$filen]- $img0 <Sparse>\n"
 		elif [ "$info" == "dtbo" ]; then
 			echo -e "   [$filen]- $img0 <DTBO>\n"
 		elif [ "$info" == "boot" ]; then
@@ -278,8 +280,6 @@ echo -e "\033[33m [Img]文件\033[0m\n"
 			echo -e "   [$filen]- $img0 <VENDOR_BOOT>\n"
 		elif [ "$info" == "super" ] || [ $(echo "$img0" | grep "super") ]; then
 			echo -e "   [$filen]- $img0 <SUPER>\n"
-		elif [ "$info" == "sparse" ]; then
-			echo -e "   [$filen]- $img0 <Sparse>\n"
 		else
 			ywarn "   [$filen]- $img0 <UNKNOWN>\n"
 		fi
