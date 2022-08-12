@@ -1032,21 +1032,19 @@ for imag in $(ls $Imgdir/*.img);do
 	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev  | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
 	if ! echo $superpa | grep "partition "$image":readonly" > /dev/null && ! echo $superpa | grep "partition "$image"_a:readonly" > /dev/null  ;then
 		if [ "$supertype" = "VAB" ] || [ "$supertype" = "AB" ];then
-            superpa+="--metadata-slots 3 "
 			if [[ -f $Imgdir/${image}_a.img ]] && [[ -f $Imgdir/${image}_b.img ]];then
 				img_sizea=$(wc -c <$Imgdir/${image}_a.img) && img_sizeb=$(wc -c <$Imgdir/${image}_b.img)
-			group_size=`expr ${img_sizea} + ${img_sizeb} + ${group_size}`
-				superpa+="--partition "$image"_a:readonly:$img_sizea:main --image "$image"_a=$Imgdir/${image}_a.img --partition "$image"_b:readonly:$img_sizeb:main --image "$image"_b=$Imgdir/${image}_b.img "
+			    group_size=`expr ${img_sizea} + ${img_sizeb} + ${group_size}`
+				superpa+="--partition "$image"_a:readonly:$img_sizea:${super_group}_a --image "$image"_a=$Imgdir/${image}_a.img --partition "$image"_b:readonly:$img_sizeb:${super_group}_b --image "$image"_b=$Imgdir/${image}_b.img "
 			else
 				mv $imag $Imgdir/$image.img > /dev/null 2>&1
 				img_size=$(wc -c <$Imgdir/$image.img)
 				group_size=`expr ${img_size} + ${group_size}`
-				superpa+="--partition "$image"_a:readonly:$img_size:main --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:main "
+				superpa+="--partition "$image"_a:readonly:$img_size:${super_group}_a --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:${super_group}_b "
 			fi
 		else
-			superpa+="--metadata-slots 2 "
 			img_size=$(wc -c <$Imgdir/$image.img)
-			superpa+="--partition "$image":readonly:$img_size:main --image "$image"=$Imgdir/$image.img "
+			superpa+="--partition "$image":readonly:$img_size:${super_group} --image "$image"=$Imgdir/$image.img "
 			group_size=`expr ${img_size} + ${group_size}`
 		fi
 	fi
@@ -1054,9 +1052,11 @@ done
 
 superpa+="--device super:$supersize "
 if [ "$supertype" = "VAB" ] || [ "$supertype" = "AB" ];then
+    superpa+="--metadata-slots 3 "
     superpa+=" --group ${super_group}_a:$supersize "
     superpa+=" --group ${super_group}_b:$supersize "
 else
+    superpa+="--metadata-slots 2 "
     superpa+=" --group ${super_group}:$supersize "
 fi
 superpa+="$fullsuper $autoslotsuffixing --output $outputimg"
