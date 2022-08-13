@@ -983,7 +983,20 @@ supersize=$(cat $PROJECT_DIR/config/super_size.txt)
 read -p "检测到分解super大小为$supersize,是否按此大小继续打包？[1/0]" iforsize
 fi
 if [ ! "$iforsize" == "1" ];then
-	read -p "请输入super分区大小（字节数，常见9126805504 10200547328 16106127360）	" supersize
+	read -p "请设置构建Super.img大小:[1]9126805504 [2]10200547328 [3]16106127360 [4]压缩到最小 [5]自定义" checkssize
+	if [ "$checkssize" = "1" ];then
+		supersize=9126805504
+	elif [ "$checkssize" = "2" ];then
+		supersize=10200547328
+	elif [ "$checkssize" = "3" ];then
+		supersize=16106127360
+	elif [ "$checkssize" = "4" ];then
+		minssize=1 && supersize=0
+		ywarn "您已设置压缩镜像至最小,您的镜像对齐不规范将造成打包失败；Size超出物理分区大小亦会造成刷入失败！"
+		sleep 4
+	else
+		read -p "请输入super分区大小（字节数）	" supersize
+	fi
 fi
 yecho "打包到super/super.img..."
 insuper $PROJECT_DIR/super $PROJECT_DIR/super/super.img
@@ -1014,7 +1027,7 @@ packmenu
 function insuper(){
 Imgdir=$1
 outputimg=$2
-group_size=0
+group_size_a=0 && group_size_b=0
 if [[ $userid = "root" ]]; then
 	${su} chmod -R 777 $Imgdir
 fi
@@ -1033,22 +1046,37 @@ for imag in $(ls $Imgdir/*.img);do
 	if ! echo $superpa | grep "partition "$image":readonly" > /dev/null && ! echo $superpa | grep "partition "$image"_a:readonly" > /dev/null  ;then
 		if [ "$supertype" = "VAB" ] || [ "$supertype" = "AB" ];then
 			if [[ -f $Imgdir/${image}_a.img ]] && [[ -f $Imgdir/${image}_b.img ]];then
+				groupaab=1
 				img_sizea=$(wc -c <$Imgdir/${image}_a.img) && img_sizeb=$(wc -c <$Imgdir/${image}_b.img)
-			    group_size=`expr ${img_sizea} + ${img_sizeb} + ${group_size}`
+			    group_size_a=`expr ${img_sizea} + ${group_size_a}`
+			    group_size_b=`expr ${img_sizeb} + ${group_size_b}`
 				superpa+="--partition "$image"_a:readonly:$img_sizea:${super_group}_a --image "$image"_a=$Imgdir/${image}_a.img --partition "$image"_b:readonly:$img_sizeb:${super_group}_b --image "$image"_b=$Imgdir/${image}_b.img "
 			else
 				mv $imag $Imgdir/$image.img > /dev/null 2>&1
 				img_size=$(wc -c <$Imgdir/$image.img)
-				group_size=`expr ${img_size} + ${group_size}`
+				group_size_a=`expr ${img_size} + ${group_size_a}`
+				group_size_b=`expr ${img_size} + ${group_size_b}`
 				superpa+="--partition "$image"_a:readonly:$img_size:${super_group}_a --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:${super_group}_b "
 			fi
 		else
 			img_size=$(wc -c <$Imgdir/$image.img)
 			superpa+="--partition "$image":readonly:$img_size:${super_group} --image "$image"=$Imgdir/$image.img "
-			group_size=`expr ${img_size} + ${group_size}`
+			group_size_a=`expr ${img_size} + ${group_size}`
 		fi
 	fi
 done
+
+if [ "$groupaab" == "" ];then
+supermsize=`expr ${group_size_a} + ${SBLOCKSIZE} \* 1000`
+elif [ "$groupaab" == "1" ];then
+supermsize=`expr ${group_size_a} + ${group_size_b} + ${SBLOCKSIZE} \* 1000`
+fi
+if [ "$minssize" == "1" ];then
+ supersize=$supermsize
+elif [ $supermsize -gt $supersize ];then
+ ywarn "设置SuperSize过小！已自动扩大！"
+ supersize=$supermsize
+fi
 
 superpa+="--device super:$supersize "
 if [ "$supertype" = "VAB" ] || [ "$supertype" = "AB" ];then
@@ -1065,6 +1093,8 @@ if ( $ebinner/lpmake $superpa | tee $tiklog );then
 else
     ywarn "创建super.img失败！"
 fi
+minssize="0" && groupaab=""
+exit
 sleep $sleeptime
 }
 
@@ -1440,7 +1470,7 @@ fi
   # Cygwin Hack
   if [ "$(uname -o)" = "Cygwin" ] && [ ! -f "$binner/depment" ]; then
 	echo -e "\033[33m $(cat $binner/banners/1) \033[0m"
-	packages="python3,curl,bc,cpio,aria2,p7zip,gcc-core,gcc-g++,libiconv,zlib,wget"
+	packages="python3,curl,bc,cpio,aria2,p7zip,libnss3-tools,gcc-core,gcc-g++,libiconv,zlib,wget"
 	# AIK for cygwin extra packages
 	packages+=",file,lzop,xz,gzip,bzip2,libintl8,liblzo2_2"
 	if [ ! -f "$binner/Cygwin/setup-x86_64.exe" ]; then
@@ -1463,7 +1493,7 @@ fi
     userid="$USERNAME"
   fi
 
-packages="python3 simg2img img2simg cpio sed python3-pip brotli curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
+packages="python3 simg2img img2simg cpio sed libnss3-tools python3-pip brotli curl bc cpio default-jre android-sdk-libsparse-utils openjdk-11-jre aria2 p7zip-full"
 if [[ ! -f "$binner/depment" ]]; then
 	echo -e "\033[33m $(cat $binner/banners/1) \033[0m"
 	if [[ $(whoami) = "root" ]]; then
