@@ -8,6 +8,7 @@ AIK="$binner/AIK"
 MBK="$binner/MBK"
 platform=$(uname -m)
 ostype=$(uname -o)
+getprop() { grep "$1" "${SYSTEM_DIR}/build.prop" | cut -d "=" -f 2; } #读取机型配置
 export LD_LIBRARY_PATH=$ebinner/lib64
 PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
 # Add for cygwin by affggh
@@ -924,8 +925,23 @@ elif [ "$info" = "erofs" ];then
 elif [ "$info" = "dtbo" ];then
 	undtbo
 elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
-	super_size=$(wc -c <$infile | awk '{print $1}' | bc -q)
-	yecho "super分区大小: $super_size bytes  解压${sf}.img中..."
+	yecho "获取Super信息中..."
+	$ebinner/lpdump $infile >>$tempdir/super_dyn.info && rm -rf $PROJECT_DIR/config/super.info
+    if grep "virtual_ab" "$tempdir/super_dyn.info" > /dev/null ;then
+		yecho "检测到VAB机型!"
+	fi
+	yecho "获取Super详细信息中..."
+	echo header_flags=`grep "Header flags" "$tempdir/super_dyn.info" | cut -d " " -f 3` | tee $PROJECT_DIR/config/super.info
+	echo metadata_version=`grep "Metadata version" "$tempdir/super_dyn.info" | cut -d " " -f 3` | tee $PROJECT_DIR/config/super.info
+	echo metadata_size=`grep "Metadata max size" "$tempdir/super_dyn.info" | cut -d " " -f 4` | tee $PROJECT_DIR/config/super.info
+	echo slot_num=`grep "Metadata slot count" "$tempdir/super_dyn.info" | cut -d " " -f 4` | tee $PROJECT_DIR/config/super.info
+	grep -A 6 "Block device table:" "$tempdir/super_dyn.info" >> $PROJECT_DIR/config/super_pd.info
+	echo super_name=`grep "Partition name" "$PROJECT_DIR/config/super_pd.info" | cut -d " " -f 5` | tee $PROJECT_DIR/config/super.info
+	echo supersize=`grep "Size:" "$PROJECT_DIR/config/super_pd.info" | cut -d " " -f 4` | tee $PROJECT_DIR/config/super.info
+	echo super_groupn=`grep -n "Name:" "$tempdir/super_dyn.info" | cut -d " " -f 4 | tail -1 | sed 's/_b$//g'` | tee $PROJECT_DIR/config/super.info
+	echo super_part_list=`grep -n "Name:" "$tempdir/super_dyn.info" | cut -d " " -f 4 | sed '/default/,+3d'| sed 's/_a//g'| sed 's/_b//g'| uniq ` | tee $PROJECT_DIR/config/super.info
+	ywarn "获取信息失败！修复中..."
+	yecho "解压${sf}.img中..."
 	mkdir super
 	$ebinner/lpunpack $infile $PROJECT_DIR/super
 	echo $super_size >> $PROJECT_DIR/config/super_size.txt
@@ -937,6 +953,7 @@ elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
             chmod 777 -R $TARGETDIR
         fi
 	fi
+	
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
 	bootextra
     if [[ $userid = "root" ]]; then
@@ -1123,6 +1140,19 @@ else
     ywarn "创建payload失败！"
 fi
 sleep $sleeptime
+}
+
+function make_dyop_list(){
+rm -rf dynamic_partitions_op_list && touch dynamic_partitions_op_list
+
+# Remove all existing dynamic partitions and groups before applying full OTA
+remove_all_groups
+
+if [[ -f $PROJECT_DIR/config/super_size.txt ]]; then
+supersize=$(cat $PROJECT_DIR/config/super_size.txt)
+read -p "检测到分解super大小为$supersize,是否按此大小继续打包？[1/0]" iforsize
+fi
+
 }
 
 #解压制作
@@ -1377,16 +1407,46 @@ promenu
 #解压ZIP
 function autounpack(){
 cd $PROJECT_DIR && mkdir config && cleantemp
+if [[ -f $PROJECT_DIR/dynamic_partitions_op_list ]];then
+    if grep "add_group" "dynamic_partitions_op_list" | grep "_a " > /dev/null ;then
+		echo "super_type=VAB" >> $PROJECT_DIR/config/super.info
+		super_groupn=`grep "add_group" "dynamic_partitions_op_list" | grep "_a "|cut -d " " -f 2 | sed 's/_a$//g'`
+		yecho "读取动态分区簇名: $super_groupn"
+		echo "super_group=$super_groupn" >> $PROJECT_DIR/config/super.info
+		yecho "读取机型为:动态VAB设备"
+		supergroupa=`grep "add_group" "dynamic_partitions_op_list" | grep "_a "|cut -d " " -f 3`
+		echo "group_a_size=$supergroupa" >> $PROJECT_DIR/config/super.info
+		supergroupb=`grep "add_group" "dynamic_partitions_op_list" | grep "_b "|cut -d " " -f 3`
+		echo "group_b_size=$supergroupb" >> $PROJECT_DIR/config/super.info
+		echo "super_type=VAB" >> $PROJECT_DIR/config/super.info
+		yecho "已读取Super_Group_A:$supergroupa"
+		yecho "已读取Super_Group_B:$supergroupb"
+		if [ "$supergroupa" == "$supergroupb" ];then
+			supersize=$supergroupa
+			yecho "已读取Super分区大小:$supersize"
+		fi
+	else
+	echo "super_type=A-only" >> $PROJECT_DIR/config/super.info
+	yecho "读取机型为:动态A-only设备"
+	super_groupn=`grep "add_group" "dynamic_partitions_op_list" | cut -d " " -f 2`
+	yecho "读取动态分区簇名: $super_groupn"
+	echo "super_group=$super_groupn" >> $PROJECT_DIR/config/super.info
+	supersize=`grep "add_group " "dynamic_partitions_op_list" | cut -d " " -f 3`
+	yecho "已读取Super分区大小:$supersize"
+	fi
+fi
 yecho "自动解包开始！"
 #VAB自动解包
 if [ -f "payload.bin" ]; then
+	echo "super_type=VAB" >> $PROJECT_DIR/config/super.info
+	yecho "读取机型为:动态VAB设备"
 	yecho "解包 payload.bin..."
 if [ "$ostype" = "Cygwin" ]; then
 	payloadfile=`cygpath -w "$PROJECT_DIR/payload.bin"` && payloadout=`cygpath -w "$PROJECT_DIR/payload"`
 fi
 	$ebinner/payload-dumper-go $payloadfile -o $payloadout
 	yecho "payload.bin解包完成！"
-	rm -rf payload.bin && rm -rf care_map.pb && rm -rf apex_info.pb&& rm -rf payload_properties.txt
+	rm -rf payload.bin && rm -rf care_map.pb && rm -rf apex_info.pb&& mv -f payload_properties.txt $PROJECT_DIR/config && cp -afrv $PROJECT_DIR/META-INF/com/android/metadata $PROJECT_DIR/config
 	for infile in $(ls $PROJECT_DIR/payload/*.img)
 	do
 		sf=$(basename $infile | sed 's/.img//g')
