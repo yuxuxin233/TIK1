@@ -286,6 +286,7 @@ echo -e "\033[33m [Img]文件\033[0m\n"
 		fi
 		eval "file$filen=$img0" 
 		eval "info$filen=img"
+		if [ "$info" == "sparse" ]; then eval "info$filen=sparse" ;fi
 	fi
 	done
 fi
@@ -841,7 +842,7 @@ if [[ ! -d "$PROJECT_DIR/config" ]]; then
 fi
 cleantemp
 rmdire ${sf} ${sf}_dtbs ${sf}_dtbo | tee $tiklog
-rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt
+rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt ${sf}.info
 yecho "解包$sf中..."
 if [ "$info" = "sparse" ];then
 	yecho "当前sparseimg转换为rimg中..."
@@ -927,33 +928,36 @@ elif [ "$info" = "dtbo" ];then
 elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
 	yecho "获取Super信息中..."
 	$ebinner/lpdump $infile >>$tempdir/super_dyn.info && rm -rf $PROJECT_DIR/config/super.info
-    if grep "virtual_ab" "$tempdir/super_dyn.info" > /dev/null ;then
-		yecho "检测到VAB机型!"
-	fi
-	yecho "获取Super详细信息中..."
-	echo header_flags=`grep "Header flags" "$tempdir/super_dyn.info" | cut -d " " -f 3` | tee $PROJECT_DIR/config/super.info
-	echo metadata_version=`grep "Metadata version" "$tempdir/super_dyn.info" | cut -d " " -f 3` | tee $PROJECT_DIR/config/super.info
-	echo metadata_size=`grep "Metadata max size" "$tempdir/super_dyn.info" | cut -d " " -f 4` | tee $PROJECT_DIR/config/super.info
-	echo slot_num=`grep "Metadata slot count" "$tempdir/super_dyn.info" | cut -d " " -f 4` | tee $PROJECT_DIR/config/super.info
-	grep -A 6 "Block device table:" "$tempdir/super_dyn.info" >> $PROJECT_DIR/config/super_pd.info
-	echo super_name=`grep "Partition name" "$PROJECT_DIR/config/super_pd.info" | cut -d " " -f 5` | tee $PROJECT_DIR/config/super.info
-	echo supersize=`grep "Size:" "$PROJECT_DIR/config/super_pd.info" | cut -d " " -f 4` | tee $PROJECT_DIR/config/super.info
-	echo super_groupn=`grep -n "Name:" "$tempdir/super_dyn.info" | cut -d " " -f 4 | tail -1 | sed 's/_b$//g'` | tee $PROJECT_DIR/config/super.info
-	echo super_part_list=`grep -n "Name:" "$tempdir/super_dyn.info" | cut -d " " -f 4 | sed '/default/,+3d'| sed 's/_a//g'| sed 's/_b//g'| uniq ` | tee $PROJECT_DIR/config/super.info
-	ywarn "获取信息失败！修复中..."
+	echo header_flags=`grep "Header flags" "$tempdir/super_dyn.info" | cut -d " " -f 3` >> $PROJECT_DIR/config/super.info
+	echo metadata_version=`grep "Metadata version" "$tempdir/super_dyn.info" | cut -d " " -f 3` >> $PROJECT_DIR/config/super.info
+	echo metadata_size=`grep "Metadata max size" "$tempdir/super_dyn.info" | cut -d " " -f 4` >> $PROJECT_DIR/config/super.info
+	echo slot_num=`grep "Metadata slot count" "$tempdir/super_dyn.info" | cut -d " " -f 4` >> $PROJECT_DIR/config/super.info
+	grep -A 6 "Block device table:" "$tempdir/super_dyn.info" >> $tempdir/super_pd.info
+	echo super_name=`grep "Partition name" "$tempdir/super_pd.info" | cut -d " " -f 5` >> $PROJECT_DIR/config/super.info
+	echo supersize=`grep "Size:" "$tempdir/super_pd.info" | cut -d " " -f 4` >> $PROJECT_DIR/config/super.info
+	echo super_groupn=`grep -n "Name:" "$tempdir/super_dyn.info" | cut -d " " -f 4 | tail -1 | sed 's/_b$//g'` >> $PROJECT_DIR/config/super.info
+	echo super_part_list=\""`grep -n "Name:" "$tempdir/super_dyn.info" | cut -d " " -f 4 | sed '/default/,+3d'| sed 's/_a//g'| sed 's/_b//g'| uniq | sed ':label;N;s/\n/ /;b label'`"\" >> $PROJECT_DIR/config/super.info
+	source $PROJECT_DIR/config/super.info
+	yecho "
+	[Header_Flags] $header_flags
+	[Metadata version] $metadata_version
+	[Metadata max size] $metadata_size
+	[Metadata slot count] $slot_num
+	[Partition name] $super_name
+	[Super Size] $supersize
+	[Super Group Name] $super_groupn
+	[Super Partition List] $super_part_list"
 	yecho "解压${sf}.img中..."
 	mkdir super
 	$ebinner/lpunpack $infile $PROJECT_DIR/super
-	echo $super_size >> $PROJECT_DIR/config/super_size.txt
 	if [ ! $? = "0" ];then
 		ywarn "解压失败"
 	else
-		ysuc "super输出至 $TARGETDIR"
+		ysuc "super解包完成!"
         if [[ $userid = "root" ]]; then
             chmod 777 -R $TARGETDIR
         fi
 	fi
-	
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
 	bootextra
     if [[ $userid = "root" ]]; then
@@ -1418,7 +1422,7 @@ if [[ -f $PROJECT_DIR/dynamic_partitions_op_list ]];then
 		echo "group_a_size=$supergroupa" >> $PROJECT_DIR/config/super.info
 		supergroupb=`grep "add_group" "dynamic_partitions_op_list" | grep "_b "|cut -d " " -f 3`
 		echo "group_b_size=$supergroupb" >> $PROJECT_DIR/config/super.info
-		echo "super_type=VAB" >> $PROJECT_DIR/config/super.info
+		echo "header_flags=virtual_ab_device" >> $PROJECT_DIR/config/super.info
 		yecho "已读取Super_Group_A:$supergroupa"
 		yecho "已读取Super_Group_B:$supergroupb"
 		if [ "$supergroupa" == "$supergroupb" ];then
@@ -1426,7 +1430,7 @@ if [[ -f $PROJECT_DIR/dynamic_partitions_op_list ]];then
 			yecho "已读取Super分区大小:$supersize"
 		fi
 	else
-	echo "super_type=A-only" >> $PROJECT_DIR/config/super.info
+	echo "header_flags=none" >> $PROJECT_DIR/config/super.info
 	yecho "读取机型为:动态A-only设备"
 	super_groupn=`grep "add_group" "dynamic_partitions_op_list" | cut -d " " -f 2`
 	yecho "读取动态分区簇名: $super_groupn"
@@ -1438,7 +1442,7 @@ fi
 yecho "自动解包开始！"
 #VAB自动解包
 if [ -f "payload.bin" ]; then
-	echo "super_type=VAB" >> $PROJECT_DIR/config/super.info
+	echo "header_flags=virtual_ab_device" >> $PROJECT_DIR/config/super.info
 	yecho "读取机型为:动态VAB设备"
 	yecho "解包 payload.bin..."
 if [ "$ostype" = "Cygwin" ]; then
