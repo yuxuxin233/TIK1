@@ -842,7 +842,7 @@ if [[ ! -d "$PROJECT_DIR/config" ]]; then
 fi
 cleantemp
 rmdire ${sf} ${sf}_dtbs ${sf}_dtbo | tee $tiklog
-rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt ${sf}.info
+rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt config/${sf}.info
 yecho "解包$sf中..."
 if [ "$info" = "sparse" ];then
 	yecho "当前sparseimg转换为rimg中..."
