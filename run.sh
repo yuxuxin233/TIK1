@@ -563,7 +563,7 @@ elif [[ "$filed" = "55" ]]; then
 	esac
 	
 	if [[ "$diyimgtype" == "1" ]];then
-		echo "您要手动打包所有分区格式为：[1]ext4 [2]erofs" syscheck
+		read -p "您要手动打包所有分区格式为：[1]ext4 [2]erofs" syscheck
 		case $syscheck in
 			2)
 			imgtype="erofs"
@@ -622,7 +622,7 @@ elif [[ $filed =~ ^-?[1-9][0-9]*$ ]]; then
 		esac
 		fi
 		if [[ "$diyimgtype" == "1" ]] && [[ ! "$imgtype" == "bootimg" ]] && [[ ! "$imgtype" == "dtb" ]] && [[ ! "$imgtype" == "dtbo" ]];then
-			echo "您要手动打包分区格式为：[1]ext4 [2]erofs" syscheck
+			read -p "您要手动打包分区格式为：[1]ext4 [2]erofs" syscheck
 			case $syscheck in
 				2)
 				imgtype="erofs"
