@@ -872,7 +872,7 @@ elif [ "$info" = "ofp" ];then
 elif [ "$info" = "ozip" ];then
 	python3 $binner/oppo_decrypt/ozipdecrypt.py $infile | tee $tiklog
 elif [ "$info" = "ops" ];then
-	python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf | tee $tiklog
+	python3 $binner/oppo_decrypt/opscrypto.py decrypt $infile | tee $tiklog
 elif [ "$info" = "payload" ];then
 	yecho "$sf所含分区列表："
 if [ "$ostype" = "Cygwin" ]; then
