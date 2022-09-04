@@ -563,7 +563,7 @@ elif [[ "$filed" = "55" ]]; then
 	esac
 	
 	if [[ "$diyimgtype" == "1" ]];then
-		echo "您要手动打包所有分区格式为：[1]ext4 [2]erofs" syscheck
+		read -p "您要手动打包所有分区格式为：[1]ext4 [2]erofs" syscheck
 		case $syscheck in
 			2)
 			imgtype="erofs"
@@ -622,7 +622,7 @@ elif [[ $filed =~ ^-?[1-9][0-9]*$ ]]; then
 		esac
 		fi
 		if [[ "$diyimgtype" == "1" ]] && [[ ! "$imgtype" == "bootimg" ]] && [[ ! "$imgtype" == "dtb" ]] && [[ ! "$imgtype" == "dtbo" ]];then
-			echo "您要手动打包分区格式为：[1]ext4 [2]erofs" syscheck
+			read -p "您要手动打包分区格式为：[1]ext4 [2]erofs" syscheck
 			case $syscheck in
 				2)
 				imgtype="erofs"
@@ -872,7 +872,7 @@ elif [ "$info" = "ofp" ];then
 elif [ "$info" = "ozip" ];then
 	python3 $binner/oppo_decrypt/ozipdecrypt.py $infile | tee $tiklog
 elif [ "$info" = "ops" ];then
-	python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $infile $PROJECT_DIR/$sf | tee $tiklog
+	python3 $binner/oppo_decrypt/opscrypto.py decrypt $infile | tee $tiklog
 elif [ "$info" = "payload" ];then
 	yecho "$sf所含分区列表："
 if [ "$ostype" = "Cygwin" ]; then
@@ -927,6 +927,7 @@ elif [ "$info" = "dtbo" ];then
 	undtbo
 elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
 	yecho "获取Super信息中..."
+    chmod 777 $ebinner/lpdump
 	$ebinner/lpdump $infile >>$tempdir/super_dyn.info && rm -rf $PROJECT_DIR/config/super.info
 	echo header_flags=`grep "Header flags" "$tempdir/super_dyn.info" | cut -d " " -f 3` >> $PROJECT_DIR/config/super.info
 	echo metadata_version=`grep "Metadata version" "$tempdir/super_dyn.info" | cut -d " " -f 3` >> $PROJECT_DIR/config/super.info
