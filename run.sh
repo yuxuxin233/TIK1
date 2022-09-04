@@ -181,7 +181,6 @@ case $op_menu in
         ;;
 		5)
 		# packzip
-		echo ""
 		echo "维护中..."
 		echo ""
 		sleep $sleeptime
@@ -927,7 +926,6 @@ elif [ "$info" = "dtbo" ];then
 	undtbo
 elif [ "$info" = "super" ]|| [ $(echo "$sf" | grep "super") ];then
 	yecho "获取Super信息中..."
-    chmod 777 $ebinner/lpdump
 	$ebinner/lpdump $infile >>$tempdir/super_dyn.info && rm -rf $PROJECT_DIR/config/super.info
 	echo header_flags=`grep "Header flags" "$tempdir/super_dyn.info" | cut -d " " -f 3` >> $PROJECT_DIR/config/super.info
 	echo metadata_version=`grep "Metadata version" "$tempdir/super_dyn.info" | cut -d " " -f 3` >> $PROJECT_DIR/config/super.info
