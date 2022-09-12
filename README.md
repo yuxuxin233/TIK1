@@ -39,6 +39,12 @@ Note: WSL 可能存在权限出错的问题 请自行判断测试！
 
     git clone https://gitee.com/yeliqin666/TIK TIK3
     cd TIK3 && bash run.sh
+
+    或
+
+    git clone https://gitee.com/yeliqin666/TIK TIK3 --depth=1
+
+    cd TIK3 && bash run.sh
 	
 ####  **【手机端】** 
 
