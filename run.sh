@@ -19,9 +19,9 @@ if [ "$ostype" = "Cygwin" ]; then
   ebinner="$binner/Cygwin/$platform"
   export PATH=$ebinner:$binner/Cygwin/jdk-18.0.1.1:$PATH
   export ostype
-  # Hack : cygwin dose not have sudo
-  # you can use cygstart --action=runas
   sudo() {
+	# Hack : cygwin dose not have sudo
+	# you can use cygstart --action=runas
     LOGW "Cygwin 没有sudo命令，因此直接执行"
 	$@
   }
@@ -29,8 +29,8 @@ if [ "$ostype" = "Cygwin" ]; then
 else
   ebinner="$binner/Linux/$platform"
 fi
-mkdtimg_tool="$binner/mkdtboimg.py"
 dtc="$ebinner/dtc"
+mkdtimg_tool="$binner/mkdtboimg.py"
 yecho(){ echo -e "\033[36m[$(date '+%H:%M:%S')]${1}\033[0m" ; }	#显示打印
 rmdire(){ if [ -d "$1" ];then sudo rm -rf $1 ;fi ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
@@ -49,11 +49,8 @@ author=$(echo $content| cut -d \" -f 12)
 echo -e "\033[31m $(cat $binner/banners/$banner) \033[0m"
 echo 
 
-# Add modified version
-if [ "$(uname -o)" = "Cygwin" ]; then
-  printf "\e[5;16H\e[92;44m Cygwin64 Modified Edition \e[0m"
-  printf "\e[8;0H"
-fi
+printf "\e[5;16H\e[92;44m Beta Edition \e[0m"
+printf "\e[8;0H"
 
 echo -ne "\033[36m “$shiju”"
 echo -e "\033[36m---$author《$from》\033[0m"
@@ -85,8 +82,8 @@ elif [ "$op_pro" == "88" ]; then
 	echo "维护中..."
 	echo ""
 	sleep $sleeptime
-	#return 0
-	miuiupdate
+	return 0
+	#miuiupdate
 elif [ "$op_pro" == "00" ]; then
 	read -p "  请输入你要删除的项目序号：" op_pro
     del=1 && Project
@@ -181,7 +178,6 @@ case $op_menu in
         ;;
 		5)
 		# packzip
-		echo ""
 		echo "维护中..."
 		echo ""
 		sleep $sleeptime
@@ -845,9 +841,9 @@ rmdire ${sf} ${sf}_dtbs ${sf}_dtbo | tee $tiklog
 rm -rf config/${sf}_file_contexts config/${sf}_fs_config config/${sf}_size.txt config/${sf}_type.txt config/${sf}.info
 yecho "解包$sf中..."
 if [ "$info" = "sparse" ];then
-	yecho "当前sparseimg转换为rimg中..."
+	yecho "sparseimg转换为rawimg中..."
 	simg2img $infile $tempdir/$sf.img | tee $tiklog
-	yecho "解压rimg中..."
+	yecho "解压rawimg中..."
 	infile=$tempdir/${sf}.img && getinfo $infile && imgextra
 elif [ "$info" = "dtbo" ];then
 	undtbo
@@ -1013,7 +1009,7 @@ if [ ! "$iforsize" == "1" ];then
 		supersize=16106127360
 	elif [ "$checkssize" = "4" ];then
 		minssize=1 && supersize=0
-		ywarn "您已设置压缩镜像至最小,您的镜像对齐不规范将造成打包失败；Size超出物理分区大小亦会造成刷入失败！"
+		ywarn "您已设置压缩镜像至最小,对齐不规范的镜像将造成打包失败；Size超出物理分区大小会造成刷入失败！"
 		sleep 4
 	else
 		read -p "请输入super分区大小（字节数）	" supersize
@@ -1037,7 +1033,20 @@ supersize=$(cat $PROJECT_DIR/config/super_size.txt)
 read -p "检测到分解super大小为$supersize,是否按此大小继续打包？[1/0]" iforsize
 fi
 if [ ! "$iforsize" == "1" ];then
-	read -p "请输入super分区大小（字节数，常见9126805504 10200547328 16106127360）	" supersize
+	read -p "请设置构建Super.img大小:[1]9126805504 [2]10200547328 [3]16106127360 [4]压缩到最小 [5]自定义" supersize
+	if [ "$supersize" = "1" ];then
+		supersize=9126805504
+	elif [ "$supersize" = "2" ];then
+		supersize=10200547328
+	elif [ "$supersize" = "3" ];then
+		supersize=16106127360
+	elif [ "$supersize" = "4" ];then
+		minssize=1 && supersize=0
+		ywarn "您已设置压缩镜像至最小,对齐不规范的镜像将造成打包失败；Size超出物理分区大小会造成刷入失败！"
+		sleep 4
+	else
+		read -p "请输入super分区大小（字节数）	" supersize
+	fi
 fi
 yecho "打包到$PROJECT_DIR/TI_out/payload..."
 inpayload $supersize
@@ -1150,7 +1159,7 @@ function make_dyop_list(){
 rm -rf dynamic_partitions_op_list && touch dynamic_partitions_op_list
 
 # Remove all existing dynamic partitions and groups before applying full OTA
-remove_all_groups
+#remove_all_groups
 
 if [[ -f $PROJECT_DIR/config/super_size.txt ]]; then
 supersize=$(cat $PROJECT_DIR/config/super_size.txt)
@@ -1228,7 +1237,7 @@ fi
 subbed
 }
 
-#插件主菜单
+#插件菜单
 function subbed(){
 if [[ ! -d $binner/subs ]]; then
 	mkdir $binner/subs
@@ -1339,7 +1348,7 @@ subbed
 function miuiupdate(){
 echo 
 echo "[1]国内版 [2]印尼版 [3]俄版 [4]国际版 [5]欧版 [6]土耳其版  [7]台湾版 [8]日本版 [9]新加坡版"
-read -p "请选择地区代号：" op_menu
+read -p "请选择地区：" op_menu
 case $op_menu in
         1)
         region=CN
